@@ -133,3 +133,4 @@ data/
 
 # environment specific folder 
 .vscode/
+.idea/
