@@ -80,8 +80,6 @@ def download_mappilary_image_information_by_bbox(bbox: Tuple[float]) -> dict:
     min_score = 3
     max_score = 5
 
-    print(MAPILLARY_CLIENT_ID)
-
     # sort_by=key enables pagination
     url = (
         'https://a.mapillary.com/v3/images?client_id={}&bbox={}&per_page=500&sort_by=key&min_quality_score={}&max_quality_score={}' \
