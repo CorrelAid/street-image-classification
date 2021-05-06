@@ -2,10 +2,10 @@ import json
 import requests
 from typing import Tuple
 
-CLIENT_ID = 'TmxURHBKRFFFRTc1dWZscGpLWW5VUDo1ZjYyYmFjYjY5MTA3MDNk'
+from config import MAPILLARY_CLIENT_ID
 
 
-def download_mapillary_image_information(url: str, file_path: str=None) -> dict:
+def download_mapillary_image_information(url: str, file_path: str = None) -> dict:
     """download information for mapillary data for a given url
     and save these metadata to a given file path (json format)
     - inspired from:
@@ -19,7 +19,7 @@ def download_mapillary_image_information(url: str, file_path: str=None) -> dict:
         dict: dictionary containing all output data in geo json format
     """
     # create an empty GeoJSON to collect all images we find
-    output = {"type":"FeatureCollection","features":[]}
+    output = {"type": "FeatureCollection", "features": []}
     print("Request URL: {}".format(url))
 
     # get the request with no timeout in case API is slow
@@ -57,7 +57,7 @@ def download_mapillary_image_information(url: str, file_path: str=None) -> dict:
         for feature in data['features']:
             output['features'].append(feature)
 
-        data_length = len(data['features']) #update data length
+        data_length = len(data['features'])  # update data length
         print('Total images: {}'.format(len(output['features'])))
 
     # send collected features to the local file
@@ -65,24 +65,27 @@ def download_mapillary_image_information(url: str, file_path: str=None) -> dict:
         with open(file_path, 'w') as outfile:
             json.dump(output, outfile)
 
-    print('DONE') # once all images are saved in a GeoJSON and saved, we finish
+    print('DONE')  # once all images are saved in a GeoJSON and saved, we finish
     print('Total images: {}'.format(len(output['features'])))
 
     return output
 
 
 def download_mappilary_image_information_by_bbox(bbox: Tuple[float]) -> dict:
-    # Filter by a bounding box on the map, given as min_longitude,min_latitude,max_longitude,max_latitude (lower left, upper right)
+    # Filter by a bounding box on the map, given as min_longitude,min_latitude,max_longitude,
+    # max_latitude (lower left, upper right)
     bbox_str = ",".join(map(str, bbox))
 
     # define image qualities to consider (1-5 inclusively)
     min_score = 3
     max_score = 5
 
+    print(MAPILLARY_CLIENT_ID)
+
     # sort_by=key enables pagination
     url = (
         'https://a.mapillary.com/v3/images?client_id={}&bbox={}&per_page=500&sort_by=key&min_quality_score={}&max_quality_score={}' \
-    ).format(CLIENT_ID, bbox_str, min_score, max_score)
+    ).format(MAPILLARY_CLIENT_ID, bbox_str, min_score, max_score)
 
     # download data from given URL
     return download_mapillary_image_information(url)
