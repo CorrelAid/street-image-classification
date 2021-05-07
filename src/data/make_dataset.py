@@ -4,16 +4,38 @@ import logging
 from pathlib import Path
 from dotenv import find_dotenv, load_dotenv
 
+import pyrosm
+
+from osm import get_city_geometry, get_mapillary_keys_from_network
+
 
 @click.command()
 @click.argument('input_filepath', type=click.Path(exists=True))
+@click.argument('city', type=click.STRING)
 @click.argument('output_filepath', type=click.Path())
-def main(input_filepath, output_filepath):
+def main(input_filepath, city, output_filepath):
     """ Runs data processing scripts to turn raw data from (../raw) into
         cleaned data ready to be analyzed (saved in ../processed).
     """
     logger = logging.getLogger(__name__)
     logger.info('making final data set from raw data')
+
+    region_osm = pyrosm.OSM(input_filepath)
+    city_geometry = get_city_geometry(region_osm, city)
+
+    city_osm = pyrosm.OSM(input_filepath, bounding_box=city_geometry)
+    driving_network = city_osm.get_network(
+        network_type="driving",
+        extra_attributes=["surface", "smoothness"]
+    )
+    # TODO: get also cycling lanes
+    # TODO: check all possible options
+
+    street_mapillary_dict = get_mapillary_keys_from_network(driving_network)
+
+    # TODO: get every image and save it somewhere
+    # TODO: make dataset in which we save image name and surface and smoothness
+    # TODO: save image separately or directly in binary dataset file?
 
 
 if __name__ == '__main__':
