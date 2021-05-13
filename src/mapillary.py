@@ -40,7 +40,7 @@ def download_mapillary_image_information(url: str, file_path: str = None) -> dic
         print("No data available for the request")
 
     # if we receive 500 items, there should be a next page
-    while data_length == 500:
+    while data_length == 500 and 'next' in r.links.keys():
 
         # get the URL for a next page
         link = r.links['next']['url']
