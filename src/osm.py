@@ -1,40 +1,49 @@
-from typing import Dict, List
+from typing import Optional
 
 import geopandas
-import pyrosm
-from shapely.geometry import Point, Polygon
+from shapely.geometry import Point
 
-from mapillary import download_mappilary_image_information_by_bbox
+from mapillary import download_mapillary_image_information_by_bbox
 
 
-def get_city_geometry(osm: pyrosm.OSM, city_name: str) -> Polygon:
+def add_mapillary_key_to_network(network: geopandas.GeoDataFrame, street_buffer: float = 1,
+                                 min_quality_score: int = 4) -> geopandas.GeoDataFrame:
+    """Get mapillary keys for all images for each street in the network.
+
+    Args:
+        network (geopandas.GeoDataFrame): Street network of edges loaded from OSM with Pyrosm
+        street_buffer (float, Optional): Specifies the buffer in meters within that all images
+            around each street are considered
+        min_quality_score (int, Optional): Specifies the minimum Mapillary quality score (1-5)
+
+    Returns:
+        geopandas.GeoDataFrame: Network which was passed as an argument with added column
+            mapillary_key. If there are multiple images for a street on Mapillary fitting our
+            requirements, the street will occur in multiple rows, each row with another
+            mapillary_key.
     """
-    Get geometry of city in OSM file as a shapely polygon
-    """
-    boundaries_df = osm.get_boundaries(name=city_name)
-    city_boundaries_df = boundaries_df[boundaries_df["admin_level"] == "6"]
-    return city_boundaries_df.iloc[0].geometry
 
-
-def get_mapillary_keys_from_network(network: geopandas.GeoDataFrame, street_buffer: float = 0.0001) \
-        -> Dict[int, List[str]]:
-    """
-    Get mapillary keys for all images for each street in the network
-    street_buffer specifies the buffer within that all images around each street are considered
-    Returns a dict in which key is the OSM street id and value is a list of mapillary keys
-    """
-    street_ids_mapillary_keys_dict = {}
+    new_df = geopandas.GeoDataFrame()
 
     for _, street in network.iterrows():
-        street_geometry = street.geometry.buffer(street_buffer)
+        # We put the street geometry in a GeoSeries so that we can use GeoSeries.to_crs()
+        # We project the street from EPSG 4326 into EPSG 3857 because in that CRS one unit
+        # equals one meters, and after buffering the street with buffer size street_buffer we
+        # project it back to EPSG 4326
+        gs = geopandas.GeoSeries([street.geometry]).set_crs(epsg=4326)
+        gs = gs.to_crs(epsg=3857)
+        gs = gs.buffer(street_buffer)
+        gs = gs.to_crs(epsg=4326)
+        street_geometry = gs[0]
         street_bbox = street_geometry.bounds
-        mapillary_keys = []
 
-        mapillary_dict = download_mappilary_image_information_by_bbox(street_bbox)
+        mapillary_dict = download_mapillary_image_information_by_bbox(street_bbox,
+                                                                      min_quality_score)
         for photo in mapillary_dict["features"]:
             mapillary_key = photo["properties"]["key"]
             photo_geometry = photo["geometry"]
 
+            # Make sure it is a point, because we don't know what other shapes could be returned
             type_ = photo_geometry["type"]
             if type_ != "Point":
                 raise Exception(f"Invalid type '{type_}'.")
@@ -42,9 +51,25 @@ def get_mapillary_keys_from_network(network: geopandas.GeoDataFrame, street_buff
             coords = photo_geometry["coordinates"]
             point = Point(coords[0], coords[1])
 
+            # If photo is within buffered street, add a new entry to our new dataframe
             if street_geometry.contains(point):
-                mapillary_keys.append(mapillary_key)
+                new_street = street.copy()
+                new_street["mapillary_key"] = mapillary_key
+                new_df = new_df.append(new_street)
 
-        street_ids_mapillary_keys_dict[street.id] = mapillary_keys
+    return new_df
 
-    return street_ids_mapillary_keys_dict
+
+def download_data_for_street_mapillary_df(street_mapillary_df: geopandas.GeoDataFrame,
+                                          image_dir: Optional[str] = None,
+                                          segmentation_dir: Optional[str] = None):
+    for _, street in street_mapillary_df.iterrows():
+        # TODO: Get data
+
+        if image_dir is not None:
+            # TODO: Download image
+            pass
+
+        if segmentation_dir is not None:
+            # TODO: Download segmentations
+            pass

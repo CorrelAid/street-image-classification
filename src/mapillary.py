@@ -1,6 +1,8 @@
 import json
+import os
 import requests
 from typing import Tuple
+from urllib.request import urlretrieve
 
 from config import MAPILLARY_CLIENT_ID
 
@@ -71,19 +73,65 @@ def download_mapillary_image_information(url: str, file_path: str = None) -> dic
     return output
 
 
-def download_mappilary_image_information_by_bbox(bbox: Tuple[float]) -> dict:
+def download_mapillary_image_information_by_bbox(bbox: Tuple[float], min_quality_score: int = 4) \
+        -> dict:
+    """Downloads Mapillary image information of all images that are within a specified bounding box
+
+    Args:
+        bbox: Specified bounding box
+        min_quality_score: Minimum quality score of the images (1-5, 1 is worst 5 is best)
+
+    Returns:
+        Dictionary which contains all the information as specified in the example response here
+        https://www.mapillary.com/developer/api-documentation/#search-images
+    """
     # Filter by a bounding box on the map, given as min_longitude,min_latitude,max_longitude,
     # max_latitude (lower left, upper right)
     bbox_str = ",".join(map(str, bbox))
 
-    # define image qualities to consider (1-5 inclusively)
-    min_score = 3
-    max_score = 5
-
     # sort_by=key enables pagination
+    # todo: do we actually want to have pagination?
     url = (
-        'https://a.mapillary.com/v3/images?client_id={}&bbox={}&per_page=500&sort_by=key&min_quality_score={}&max_quality_score={}' \
-    ).format(MAPILLARY_CLIENT_ID, bbox_str, min_score, max_score)
+        'https://a.mapillary.com/v3/images?client_id={}&bbox={}&per_page=500&sort_by=key&min_quality_score={}' \
+    ).format(MAPILLARY_CLIENT_ID, bbox_str, min_quality_score)
 
     # download data from given URL
     return download_mapillary_image_information(url)
+
+
+def download_mapillary_image_by_key(image_key: str, download_dir: str):
+    """Downloads Mapillary image
+
+    Args:
+        image_key: Key of the image that should be downloaded
+        download_dir: Directory in which the image is saved as {image_key}.jpg
+
+    Returns:
+        None
+    """
+    url = "https://images.mapillary.com/{}/thumb-2048.jpg".format(image_key)
+    image_local_path = os.path.join(download_dir, "{}.jpg".format(image_key))
+    urlretrieve(url, image_local_path)
+
+
+def download_mapillary_object_detection_by_key(image_key: str, download_dir: str):
+    """Downloads Mapillary object detection
+
+    Args:
+        image_key: Key of the image which object detection should be downloaded
+        download_dir: Directory in which the object detection json is saved as {image_key}.json
+
+    Returns:
+        None
+    """
+    layer = "segmentations"
+
+    # request for object detection layer of a certain image (given by image key)
+    url = (
+        "https://a.mapillary.com/v3/images/{}/object_detections/{}?client_id={}" \
+    ).format(image_key, layer, MAPILLARY_CLIENT_ID)
+    r = requests.get(url, timeout=300)
+    data = r.json()
+
+    with open(os.path.join(download_dir, "{}.json".format(image_key)), 'w') as f:
+        json.dump(data, f)
