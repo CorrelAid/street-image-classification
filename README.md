@@ -2,6 +2,11 @@ street_image_classification
 ==============================
 Repository for the project on classifying street image data - in cooperation with cargorocket
 
+Setting up
+------------
+* Setup virtual environment and install dependencies listed in `requirements.txt`
+* Copy `.env.example` to `.env` and set the variables
+
 Project Organization
 ------------
 

@@ -6,36 +6,54 @@ from dotenv import find_dotenv, load_dotenv
 
 import pyrosm
 
-from osm import get_city_geometry, get_mapillary_keys_from_network
+from data.mapillary import download_mapillary_image_by_key, download_mapillary_object_detection_by_key
+from data.osm import add_mapillary_key_to_network
 
 
 @click.command()
 @click.argument('input_filepath', type=click.Path(exists=True))
-@click.argument('city', type=click.STRING)
-@click.argument('output_filepath', type=click.Path())
-def main(input_filepath, city, output_filepath):
+@click.argument('min_quality_score', type=click.INT)
+@click.argument('output_dir', type=click.Path())
+def main(input_filepath, min_quality_score, output_dir):
     """ Runs data processing scripts to turn raw data from (../raw) into
         cleaned data ready to be analyzed (saved in ../processed).
     """
     logger = logging.getLogger(__name__)
     logger.info('making final data set from raw data')
 
-    region_osm = pyrosm.OSM(input_filepath)
-    city_geometry = get_city_geometry(region_osm, city)
-
-    city_osm = pyrosm.OSM(input_filepath, bounding_box=city_geometry)
-    driving_network = city_osm.get_network(
-        network_type="driving",
+    osm = pyrosm.OSM(input_filepath)
+    network = osm.get_network(
+        network_type="cycling",
         extra_attributes=["surface", "smoothness"]
     )
-    # TODO: get also cycling lanes
-    # TODO: check all possible options
 
-    street_mapillary_dict = get_mapillary_keys_from_network(driving_network)
+    # Filter relevant columns
+    network = network[["id", "geometry", "surface", "smoothness"]]
 
-    # TODO: get every image and save it somewhere
-    # TODO: make dataset in which we save image name and surface and smoothness
-    # TODO: save image separately or directly in binary dataset file?
+    # Filter only records where both surface and smoothness is set
+    network = network[(~network["surface"].isna()) & (~network["smoothness"].isna())]
+
+    # Get Mapillary keys for each street
+    street_mapillary_df = add_mapillary_key_to_network(network, min_quality_score)
+
+    # Create output dir
+    Path(f"{output_dir}").mkdir(parents=True, exist_ok=True)
+
+    # Create sub dirs
+    image_dir = f"{output_dir}/images"
+    object_detection_dir = f"{output_dir}/object_detections"
+
+    Path(image_dir).mkdir(exist_ok=True)
+    Path(object_detection_dir).mkdir(exist_ok=True)
+
+    # Export street_mapillary_df as data.csv
+    street_mapillary_df.to_csv(f"{output_dir}/data.csv", index=False)
+
+    # Download images and object detections
+    for _, row in street_mapillary_df.iterrows():
+        download_mapillary_image_by_key(row["mapillary_key"], download_dir=image_dir)
+        download_mapillary_object_detection_by_key(row["mapillary_key"],
+                                                   download_dir=object_detection_dir)
 
 
 if __name__ == '__main__':
