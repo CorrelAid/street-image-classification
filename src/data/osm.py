@@ -59,17 +59,3 @@ def add_mapillary_key_to_network(network: geopandas.GeoDataFrame, street_buffer:
 
     return new_df
 
-
-def download_data_for_street_mapillary_df(street_mapillary_df: geopandas.GeoDataFrame,
-                                          image_dir: Optional[str] = None,
-                                          segmentation_dir: Optional[str] = None):
-    for _, street in street_mapillary_df.iterrows():
-        # TODO: Get data
-
-        if image_dir is not None:
-            # TODO: Download image
-            pass
-
-        if segmentation_dir is not None:
-            # TODO: Download segmentations
-            pass

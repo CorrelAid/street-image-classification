@@ -6,8 +6,8 @@ from dotenv import find_dotenv, load_dotenv
 
 import pyrosm
 
-from mapillary import download_mapillary_image_by_key, download_mapillary_object_detection_by_key
-from osm import add_mapillary_key_to_network
+from data.mapillary import download_mapillary_image_by_key, download_mapillary_object_detection_by_key
+from data.osm import add_mapillary_key_to_network
 
 
 @click.command()
