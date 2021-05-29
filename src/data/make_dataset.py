@@ -34,7 +34,7 @@ def main(input_filepath, min_quality_score, output_dir):
     network = network[(~network["surface"].isna()) & (~network["smoothness"].isna())]
 
     # Get Mapillary keys for each street
-    street_mapillary_df = add_mapillary_key_to_network(network, min_quality_score)
+    street_mapillary_df = add_mapillary_key_to_network(network, min_quality_score=min_quality_score)
 
     # Create output dir
     Path(f"{output_dir}").mkdir(parents=True, exist_ok=True)
