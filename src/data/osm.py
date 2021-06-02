@@ -3,7 +3,7 @@ from typing import Optional
 import geopandas
 from shapely.geometry import Point
 
-from mapillary import download_mapillary_image_information_by_bbox
+from src.data.mapillary import download_mapillary_image_information_by_bbox
 
 
 def add_mapillary_key_to_network(network: geopandas.GeoDataFrame, street_buffer: float = 1,
@@ -55,6 +55,7 @@ def add_mapillary_key_to_network(network: geopandas.GeoDataFrame, street_buffer:
             if street_geometry.contains(point):
                 new_street = street.copy()
                 new_street["mapillary_key"] = mapillary_key
+                new_street["img_coords"] = point
                 new_df = new_df.append(new_street)
 
     return new_df

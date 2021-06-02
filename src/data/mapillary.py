@@ -4,7 +4,7 @@ import requests
 from typing import Tuple
 from urllib.request import urlretrieve
 
-from config import MAPILLARY_CLIENT_ID
+from src.config import MAPILLARY_CLIENT_ID
 
 
 def download_mapillary_image_information(url: str, file_path: str = None) -> dict:
