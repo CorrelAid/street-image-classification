@@ -1,12 +1,15 @@
 from typing import Optional
 
 import geopandas
-from shapely.geometry import Point
+import shapely
+from shapely.geometry import Point, MultiLineString
 
 from src.data.mapillary import download_mapillary_image_information_by_bbox
 
 
-def add_mapillary_key_to_network(network: geopandas.GeoDataFrame, street_buffer: float = 1,
+def add_mapillary_key_to_network(network: geopandas.GeoDataFrame,
+                                 street_buffer: float = 1,
+                                 shorten_street_by: float = 0,
                                  min_quality_score: int = 4) -> geopandas.GeoDataFrame:
     """Get mapillary keys for all images for each street in the network.
 
@@ -14,6 +17,10 @@ def add_mapillary_key_to_network(network: geopandas.GeoDataFrame, street_buffer:
         network (geopandas.GeoDataFrame): Street network of edges loaded from OSM with Pyrosm
         street_buffer (float, Optional): Specifies the buffer in meters within that all images
             around each street are considered
+        shorten_street_by (float, Optional): Specifies, how many meters of the street are
+            excluded at each end. This avoids selecting images belonging to the next street.
+            The optimal value depends on the value of street_buffer and for each street on the
+            angle at which they intersect.
         min_quality_score (int, Optional): Specifies the minimum Mapillary quality score (1-5)
 
     Returns:
@@ -32,7 +39,25 @@ def add_mapillary_key_to_network(network: geopandas.GeoDataFrame, street_buffer:
         # project it back to EPSG 4326
         gs = geopandas.GeoSeries([street.geometry]).set_crs(epsg=4326)
         gs = gs.to_crs(epsg=3857)
-        gs = gs.buffer(street_buffer)
+
+        # to avoid including images from crossing belonging to the wrong road, the ends of each
+        # road are excluded by cutting X meters from the LineString
+        for idx in range(len(gs)):
+            # merge a MultiLineString to a LineString, as substring() only supports LineStrings
+            line = shapely.ops.linemerge(gs.iloc[idx])
+            # check that
+            if not isinstance(line, shapely.geometry.LineString):
+                raise NotImplementedError("Only LineStrings are supported, not ", type(line))
+            if line.length < 2 * shorten_street_by:
+                # skip the street, if it is to short
+                continue
+            shortened_street = shapely.ops.substring(line,
+                                              start_dist=shorten_street_by,
+                                              end_dist=line.length - shorten_street_by)
+            gs.iloc[idx] = shortened_street
+
+        # cap_style=2 creates a flat ending of the buffer, not an round one
+        gs = gs.buffer(street_buffer, cap_style=2)
         gs = gs.to_crs(epsg=4326)
         street_geometry = gs[0]
         street_bbox = street_geometry.bounds

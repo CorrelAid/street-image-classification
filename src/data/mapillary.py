@@ -109,9 +109,12 @@ def download_mapillary_image_by_key(image_key: str, download_dir: str):
     Returns:
         None
     """
-    url = "https://images.mapillary.com/{}/thumb-2048.jpg".format(image_key)
     image_local_path = os.path.join(download_dir, "{}.jpg".format(image_key))
-    urlretrieve(url, image_local_path)
+    if not os.path.isfile(image_local_path):
+        url = "https://images.mapillary.com/{}/thumb-2048.jpg".format(image_key)
+        urlretrieve(url, image_local_path)
+    else:
+        print(image_local_path, "already exists. Skipping Download.")
 
 
 def download_mapillary_object_detection_by_key(image_key: str, download_dir: str):
