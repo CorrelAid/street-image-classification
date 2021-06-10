@@ -81,12 +81,19 @@ def main(input_filepath, street_buffer, shorten_street_by, min_quality_score, ch
 
     if os.path.exists(data_output_path):
         logger.info(f"{data_output_path} already exists, filtering OSM data..")
+        # The capitalized arguments fix a weird recursion error that seems to happen whenever there
+        # are two coordinates in the csv file (in our case geometry [osm street coords] and
+        # mapillary_coordinates [mapillary photo coords])
         street_mapillary_df = geopandas.read_file(
             data_output_path,
             GEOM_POSSIBLE_NAMES="geometry",
             KEEP_GEOM_COLUMNS="NO"
         ).set_crs(epsg=4326)
 
+        # Convert id to int
+        street_mapillary_df["id"] = pd.to_numeric(street_mapillary_df["id"], downcast='integer')
+
+        # Filter streets that were already used out of the network
         network = network[~network["id"].isin(street_mapillary_df["id"])]
         network_size_after = network.shape[0]
 
@@ -102,15 +109,19 @@ def main(input_filepath, street_buffer, shorten_street_by, min_quality_score, ch
                                                                shorten_street_by=shorten_street_by,
                                                                min_quality_score=min_quality_score)
 
-        cur_street_mapillary_df.to_csv(data_output_path,
-                                       mode='a',
-                                       header=not os.path.exists(data_output_path),
-                                       index=False)
+        if cur_street_mapillary_df.shape[0] > 0:
+            cur_street_mapillary_df["id"] = pd.to_numeric(cur_street_mapillary_df["id"],
+                                                          downcast='integer')
 
-        if street_mapillary_df is None:
-            street_mapillary_df = cur_street_mapillary_df
-        else:
-            street_mapillary_df = pd.concat([street_mapillary_df, cur_street_mapillary_df])
+            cur_street_mapillary_df.to_csv(data_output_path,
+                                           mode='a',
+                                           header=not os.path.exists(data_output_path),
+                                           index=False)
+
+            if street_mapillary_df is None:
+                street_mapillary_df = cur_street_mapillary_df
+            else:
+                street_mapillary_df = pd.concat([street_mapillary_df, cur_street_mapillary_df])
 
         streets_processed += network_partition.shape[0]
         logger.info(f"Progress {streets_processed / network_size * 100:.2f}%")
