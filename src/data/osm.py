@@ -80,7 +80,7 @@ def add_mapillary_key_to_network(network: geopandas.GeoDataFrame,
             if street_geometry.contains(point):
                 new_street = street.copy()
                 new_street["mapillary_key"] = mapillary_key
-                new_street["img_coords"] = point
+                new_street["mapillary_coordinates"] = point
                 new_df = new_df.append(new_street)
 
     return new_df

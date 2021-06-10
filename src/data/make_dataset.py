@@ -34,6 +34,8 @@ def main(input_filepath, min_quality_score, output_dir):
     network = network[(~network["surface"].isna()) & (~network["smoothness"].isna())]
 
     # Get Mapillary keys for each street
+    logger.info("Get mapillary data for street network")
+
     street_mapillary_df = add_mapillary_key_to_network(network, min_quality_score=min_quality_score)
 
     # Create output dir
@@ -50,6 +52,8 @@ def main(input_filepath, min_quality_score, output_dir):
     street_mapillary_df.to_csv(f"{output_dir}/data.csv", index=False)
 
     # Download images and object detections
+    logger.info("Downloading images and object detections")
+
     for _, row in street_mapillary_df.iterrows():
         download_mapillary_image_by_key(row["mapillary_key"], download_dir=image_dir)
         download_mapillary_object_detection_by_key(row["mapillary_key"],
