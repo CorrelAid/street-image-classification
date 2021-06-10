@@ -1,10 +1,12 @@
-from typing import Optional
+import logging
 
 import geopandas
 import shapely
 from shapely.geometry import Point, MultiLineString
 
 from src.data.mapillary import download_mapillary_image_information_by_bbox
+
+logger = logging.getLogger(__name__)
 
 
 def add_mapillary_key_to_network(network: geopandas.GeoDataFrame,
@@ -31,6 +33,9 @@ def add_mapillary_key_to_network(network: geopandas.GeoDataFrame,
     """
 
     new_df = geopandas.GeoDataFrame()
+
+    total_count = network.shape[0]
+    i = 0
 
     for _, street in network.iterrows():
         # We put the street geometry in a GeoSeries so that we can use GeoSeries.to_crs()
@@ -82,6 +87,11 @@ def add_mapillary_key_to_network(network: geopandas.GeoDataFrame,
                 new_street["mapillary_key"] = mapillary_key
                 new_street["mapillary_coordinates"] = point
                 new_df = new_df.append(new_street)
+
+        i += 1
+
+        if int(i) % 10 == 0:
+            logger.info(f"Progress {i / total_count * 100:.2f}%")
 
     return new_df
 
