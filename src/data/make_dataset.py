@@ -8,6 +8,7 @@ import pyrosm
 
 from data.mapillary import download_mapillary_image_by_key, download_mapillary_object_detection_by_key
 from data.osm import add_mapillary_key_to_network
+from data.osm import define_categories
 
 
 @click.command()
@@ -32,6 +33,9 @@ def main(input_filepath, min_quality_score, output_dir):
 
     # Filter only records where both surface and smoothness is set
     network = network[(~network["surface"].isna()) & (~network["smoothness"].isna())]
+
+    # Assign values of surface and smoothness to categories
+    network = define_categories(network)
 
     # Get Mapillary keys for each street
     street_mapillary_df = add_mapillary_key_to_network(network, min_quality_score=min_quality_score)
