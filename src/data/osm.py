@@ -40,7 +40,7 @@ def surface_categories(df: geopandas.GeoDataFrame):
 
 
 def smoothness_categories(df: geopandas.GeoDataFrame):
-    """Assign smoothness attributes to categories 'good' and 'bad'
+    """Assign smoothness attributes to categories 'good', 'intermediate' and 'bad'
 
     Args:
         df (geopandas.GeoDataFrame): Street network of edges loaded from OSM with Pyrosm including column 'smoothness'
@@ -54,7 +54,8 @@ def smoothness_categories(df: geopandas.GeoDataFrame):
     df.loc[df.smoothness.str.contains('perfect') == True, 'smoothness_category'] = 'good'
     df.loc[df.smoothness.str.contains('good') == True, 'smoothness_category'] = 'good'
 
-    df.loc[df.smoothness.str.contains('intermediate') == True, 'smoothness_category'] = 'bad'
+    df.loc[df.smoothness.str.contains('intermediate') == True, 'smoothness_category'] = 'intermediate'
+
     df.loc[df.smoothness.str.contains('bad') == True, 'smoothness_category'] = 'bad'
     df.loc[df.smoothness.str.contains('horrible') == True, 'smoothness_category'] = 'bad'
     df.loc[df.smoothness.str.contains('impassable') == True, 'smoothness_category'] = 'bad'
