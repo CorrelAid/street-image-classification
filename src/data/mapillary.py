@@ -1,10 +1,13 @@
 import json
+import logging
 import os
 import requests
 from typing import Tuple
 from urllib.request import urlretrieve
 
-from config import MAPILLARY_CLIENT_ID
+from src.config import MAPILLARY_CLIENT_ID
+
+logger = logging.getLogger(__name__)
 
 
 def download_mapillary_image_information(url: str, file_path: str = None) -> dict:
@@ -22,7 +25,7 @@ def download_mapillary_image_information(url: str, file_path: str = None) -> dic
     """
     # create an empty GeoJSON to collect all images we find
     output = {"type": "FeatureCollection", "features": []}
-    print("Request URL: {}".format(url))
+    logger.debug("Request URL: {}".format(url))
 
     # get the request with no timeout in case API is slow
     r = requests.get(url, timeout=None)
@@ -30,7 +33,7 @@ def download_mapillary_image_information(url: str, file_path: str = None) -> dic
     # check if request failed, if failed, keep trying
     while r.status_code != 200:
         r = requests.get(url, timeout=200)
-        print("Request failed")
+        logger.error("Request failed with URL {}".format(url))
 
     # retrieve data and save them to output dict
     data = r.json()
@@ -39,7 +42,7 @@ def download_mapillary_image_information(url: str, file_path: str = None) -> dic
         output['features'].append(feature)
 
     if data_length == 0:
-        print("No data available for the request")
+        logger.warning("No data available for the request")
 
     # if we receive 500 items, there should be a next page
     while data_length == 500 and 'next' in r.links.keys():
@@ -60,15 +63,14 @@ def download_mapillary_image_information(url: str, file_path: str = None) -> dic
             output['features'].append(feature)
 
         data_length = len(data['features'])  # update data length
-        print('Total images: {}'.format(len(output['features'])))
+        logger.debug('Total images: {}'.format(len(output['features'])))
 
     # send collected features to the local file
     if file_path is not None:
         with open(file_path, 'w') as outfile:
             json.dump(output, outfile)
 
-    print('DONE')  # once all images are saved in a GeoJSON and saved, we finish
-    print('Total images: {}'.format(len(output['features'])))
+    logger.debug('Total images: {}'.format(len(output['features'])))
 
     return output
 
@@ -90,9 +92,8 @@ def download_mapillary_image_information_by_bbox(bbox: Tuple[float], min_quality
     bbox_str = ",".join(map(str, bbox))
 
     # sort_by=key enables pagination
-    # todo: do we actually want to have pagination?
     url = (
-        'https://a.mapillary.com/v3/images?client_id={}&bbox={}&per_page=500&sort_by=key&min_quality_score={}' \
+        'https://a.mapillary.com/v3/images?client_id={}&bbox={}&per_page=500&sort_by=key&min_quality_score={}'
     ).format(MAPILLARY_CLIENT_ID, bbox_str, min_quality_score)
 
     # download data from given URL
@@ -109,9 +110,12 @@ def download_mapillary_image_by_key(image_key: str, download_dir: str):
     Returns:
         None
     """
-    url = "https://images.mapillary.com/{}/thumb-2048.jpg".format(image_key)
     image_local_path = os.path.join(download_dir, "{}.jpg".format(image_key))
-    urlretrieve(url, image_local_path)
+    if not os.path.isfile(image_local_path):
+        url = "https://images.mapillary.com/{}/thumb-2048.jpg".format(image_key)
+        urlretrieve(url, image_local_path)
+    else:
+        logger.info(f"{image_local_path} already exists. Skipping Download.")
 
 
 def download_mapillary_object_detection_by_key(image_key: str, download_dir: str):
@@ -124,14 +128,17 @@ def download_mapillary_object_detection_by_key(image_key: str, download_dir: str
     Returns:
         None
     """
-    layer = "segmentations"
+    json_local_path = os.path.join(download_dir, "{}.json".format(image_key))
+    if not os.path.isfile(json_local_path):
+        layer = "segmentations"
+        # request for object detection layer of a certain image (given by image key)
+        url = (
+            "https://a.mapillary.com/v3/images/{}/object_detections/{}?client_id={}"
+        ).format(image_key, layer, MAPILLARY_CLIENT_ID)
+        r = requests.get(url, timeout=300)
+        data = r.json()
 
-    # request for object detection layer of a certain image (given by image key)
-    url = (
-        "https://a.mapillary.com/v3/images/{}/object_detections/{}?client_id={}" \
-    ).format(image_key, layer, MAPILLARY_CLIENT_ID)
-    r = requests.get(url, timeout=300)
-    data = r.json()
-
-    with open(os.path.join(download_dir, "{}.json".format(image_key)), 'w') as f:
-        json.dump(data, f)
+        with open(json_local_path, 'w') as f:
+            json.dump(data, f)
+    else:
+        logger.info(f"{json_local_path} already exists. Skipping Download.")
