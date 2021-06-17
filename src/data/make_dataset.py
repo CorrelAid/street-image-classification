@@ -10,8 +10,6 @@ import geopandas
 import pandas as pd
 import pyrosm
 
-from data.mapillary import download_mapillary_image_by_key, \
-    download_mapillary_object_detection_by_key
 from data.osm import add_mapillary_key_to_network
 
 
@@ -75,11 +73,12 @@ def main(input_filepath, street_buffer, shorten_street_by, min_quality_score, ch
 
     # Combine Mapillary with OSM data
     data_output_path = f"{output_dir}/data.csv"
+    osm_id_output_path = f"{output_dir}/osm_ids.csv"
 
     street_mapillary_df = None
     streets_processed = 0
 
-    if os.path.exists(data_output_path):
+    if os.path.exists(data_output_path) and os.path.exists(osm_id_output_path):
         logger.info(f"{data_output_path} already exists, filtering OSM data..")
         # The capitalized arguments fix a weird recursion error that seems to happen whenever there
         # are two coordinates in the csv file (in our case geometry [osm street coords] and
@@ -89,12 +88,14 @@ def main(input_filepath, street_buffer, shorten_street_by, min_quality_score, ch
             GEOM_POSSIBLE_NAMES="geometry",
             KEEP_GEOM_COLUMNS="NO"
         ).set_crs(epsg=4326)
+        osm_id_df = pd.read_csv(osm_id_output_path)
 
         # Convert id to int
+        osm_id_df["id"] = pd.to_numeric(osm_id_df["id"], downcast='integer')
         street_mapillary_df["id"] = pd.to_numeric(street_mapillary_df["id"], downcast='integer')
 
         # Filter streets that were already used out of the network
-        network = network[~network["id"].isin(street_mapillary_df["id"])]
+        network = network[~network["id"].isin(osm_id_df["id"])]
         network_size_after = network.shape[0]
 
         streets_processed = network_size - network_size_after
@@ -109,12 +110,20 @@ def main(input_filepath, street_buffer, shorten_street_by, min_quality_score, ch
                                                                shorten_street_by=shorten_street_by,
                                                                min_quality_score=min_quality_score)
 
+        # Save processed OSM ids in a separate file so that we can track after a restart which
+        # OSM ids we already processed (if we just took the data.csv we would redo all OSM streets
+        # that we could not assign any Mapillary key to)
+        network_partition["id"].to_csv(osm_id_output_path,
+                                       mode="a",
+                                       header=not os.path.exists(osm_id_output_path),
+                                       index=False)
+
         if cur_street_mapillary_df.shape[0] > 0:
             cur_street_mapillary_df["id"] = pd.to_numeric(cur_street_mapillary_df["id"],
-                                                          downcast='integer')
+                                                          downcast="integer")
 
             cur_street_mapillary_df.to_csv(data_output_path,
-                                           mode='a',
+                                           mode="a",
                                            header=not os.path.exists(data_output_path),
                                            index=False)
 
@@ -127,12 +136,12 @@ def main(input_filepath, street_buffer, shorten_street_by, min_quality_score, ch
         logger.info(f"Progress {streets_processed / network_size * 100:.2f}%")
 
     # Download images and object detections
-    logger.info("Downloading images and object detections..")
-
-    for _, row in street_mapillary_df.iterrows():
-        download_mapillary_image_by_key(row["mapillary_key"], download_dir=image_dir)
-        download_mapillary_object_detection_by_key(row["mapillary_key"],
-                                                   download_dir=object_detection_dir)
+    # logger.info("Downloading images and object detections..")
+    #
+    # for _, row in street_mapillary_df.iterrows():
+    #     download_mapillary_image_by_key(row["mapillary_key"], download_dir=image_dir)
+    #     download_mapillary_object_detection_by_key(row["mapillary_key"],
+    #                                                download_dir=object_detection_dir)
 
 
 if __name__ == '__main__':

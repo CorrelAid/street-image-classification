@@ -1,8 +1,12 @@
+import logging
+
 import geopandas
 import shapely
 from shapely.geometry import Point, MultiLineString
 
 from src.data.mapillary import download_mapillary_image_information_by_bbox
+
+logger = logging.getLogger(__name__)
 
 
 def add_mapillary_key_to_network(network: geopandas.GeoDataFrame,
@@ -45,7 +49,8 @@ def add_mapillary_key_to_network(network: geopandas.GeoDataFrame,
             line = shapely.ops.linemerge(gs.iloc[idx])
             # check that
             if not isinstance(line, shapely.geometry.LineString):
-                raise NotImplementedError("Only LineStrings are supported, not ", type(line))
+                logger.warning(f"Only LineStrings are supported, not {type(line)}")
+                continue
             if line.length < 2 * shorten_street_by:
                 # skip the street, if it is to short
                 continue
