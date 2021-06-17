@@ -11,6 +11,7 @@ import pandas as pd
 import pyrosm
 
 from data.osm import add_mapillary_key_to_network
+from data.osm import define_categories
 
 
 def split_dataframe(df: geopandas.GeoDataFrame, chunk_size: int) \
@@ -47,6 +48,9 @@ def main(input_filepath, street_buffer, shorten_street_by, min_quality_score, ch
     # Filter only records where both surface and smoothness is set
     network = network[(~network["surface"].isna()) & (~network["smoothness"].isna())]
     network_size = network.shape[0]
+
+    # Assign values of surface and smoothness to categories
+    network = define_categories(network)
 
     # Get Mapillary keys for each street
     logger.info("Get mapillary data for street network..")

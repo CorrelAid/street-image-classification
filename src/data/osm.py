@@ -9,6 +9,82 @@ from src.data.mapillary import download_mapillary_image_information_by_bbox
 logger = logging.getLogger(__name__)
 
 
+def surface_categories(df: geopandas.GeoDataFrame):
+    """Assign surface attributes to categories 'paved', 'cobblestone' and 'unpaved'
+
+    Args:
+        df (geopandas.GeoDataFrame): Street network of edges loaded from OSM with Pyrosm including column 'surface'
+
+    Returns:
+        geopandas.GeoDataFrame: returns data frame with new column 'surface_category'
+    """
+
+    df['surface_category'] = 'undefined'
+    df.loc[df.surface.str.contains('asphalt') == True, 'surface_category'] = 'paved'
+    df.loc[df.surface.str.contains('concrete') == True, 'surface_category'] = 'paved'
+    df.loc[df.surface.str.contains('paved') == True, 'surface_category'] = 'paved'
+
+    df.loc[df.surface.str.contains('stone') == True, 'surface_category'] = 'cobblestone'
+    df.loc[df.surface.str.contains('sett') == True, 'surface_category'] = 'cobblestone'
+
+    df.loc[df.surface.str.contains('unpaved') == True, 'surface_category'] = 'unpaved'
+    df.loc[df.surface.str.contains('dirt') == True, 'surface_category'] = 'unpaved'
+    df.loc[df.surface.str.contains('grass') == True, 'surface_category'] = 'unpaved'
+    df.loc[df.surface.str.contains('earth') == True, 'surface_category'] = 'unpaved'
+    df.loc[df.surface.str.contains('gravel') == True, 'surface_category'] = 'unpaved'
+    df.loc[df.surface.str.contains('sand') == True, 'surface_category'] = 'unpaved'
+    df.loc[df.surface.str.contains('wood') == True, 'surface_category'] = 'unpaved'
+    df.loc[df.surface.str.contains('bricks') == True, 'surface_category'] = 'unpaved'
+    df.loc[df.surface.str.contains('ground') == True, 'surface_category'] = 'unpaved'
+    df.loc[df.surface.str.contains('tartan') == True, 'surface_category'] = 'unpaved'
+    df.loc[df.surface.str.contains('compacted') == True, 'surface_category'] = 'unpaved'
+
+    return df
+
+
+def smoothness_categories(df: geopandas.GeoDataFrame):
+    """Assign smoothness attributes to categories 'good', 'intermediate' and 'bad'
+
+    Args:
+        df (geopandas.GeoDataFrame): Street network of edges loaded from OSM with Pyrosm including column 'smoothness'
+
+    Returns:
+        geopandas.GeoDataFrame: returns data frame with new column 'smoothness_category'
+    """
+
+    df['smoothness_category'] = 'undefined'
+    df.loc[df.smoothness.str.contains('excellent') == True, 'smoothness_category'] = 'good'
+    df.loc[df.smoothness.str.contains('perfect') == True, 'smoothness_category'] = 'good'
+    df.loc[df.smoothness.str.contains('good') == True, 'smoothness_category'] = 'good'
+
+    df.loc[df.smoothness.str.contains('intermediate') == True, 'smoothness_category'] = 'intermediate'
+
+    df.loc[df.smoothness.str.contains('bad') == True, 'smoothness_category'] = 'bad'
+    df.loc[df.smoothness.str.contains('horrible') == True, 'smoothness_category'] = 'bad'
+    df.loc[df.smoothness.str.contains('impassable') == True, 'smoothness_category'] = 'bad'
+
+    return df
+
+
+def define_categories(df: geopandas.GeoDataFrame):
+    """Calls surface_categories and smoothness_categories.
+    Surface attributes are assigned to categories 'paved', 'cobblestone' and 'unpaved'.
+    Smoothness attributes are assigned to categories 'good' and 'bad'.
+
+    Args:
+        df (geopandas.GeoDataFrame): Street network of edges loaded from OSM with Pyrosm including column 'surface'
+
+    Returns:
+        geopandas.GeoDataFrame: returns data frame which was passed as an argument with new columns 'surface_category'
+        and 'smoothness_category'.
+    """
+
+    df = surface_categories(df)
+    df = smoothness_categories(df)
+
+    return df
+
+
 def add_mapillary_key_to_network(network: geopandas.GeoDataFrame,
                                  street_buffer: float = 1,
                                  shorten_street_by: float = 0,
@@ -87,4 +163,3 @@ def add_mapillary_key_to_network(network: geopandas.GeoDataFrame,
                 new_df = new_df.append(new_street)
 
     return new_df
-
