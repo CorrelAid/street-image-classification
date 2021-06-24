@@ -3,13 +3,13 @@ its labels in separate subfolders. This is necessary for being able
 to directly use the Pytorch dataloader
 """
 from pathlib import Path
-import pandas as pd 
-import os 
-import shutil 
+import pandas as pd
+import os
+import shutil
 
-def load_image_metadata(path_to_data_csv: str) -> \
-    pd.DataFrame:
-    """Loads the image metadata, i.e. tags, mapillary id etc. 
+
+def load_image_metadata(path_to_data_csv: str) -> pd.DataFrame:
+    """Loads the image metadata, i.e. tags, mapillary id etc.
 
     Args:
         path_to_data_csv (str): path to data.csv file
@@ -20,8 +20,12 @@ def load_image_metadata(path_to_data_csv: str) -> \
     return pd.read_csv(path_to_data_csv)
 
 
-def copy_images_to_smoothness_labeled_folders(image_data: pd.DataFrame,
-path_to_images: str, final_dataset_folder: str, surface_tag: str):
+def copy_images_to_smoothness_labeled_folders(
+    image_data: pd.DataFrame,
+    path_to_images: str,
+    final_dataset_folder: str,
+    surface_tag: str,
+):
     """Creates folders for each smoothness tag of the given surface tag
     and copies the images of the given folder to these subfolders
     according to their smoothness tags. At the end, there are subfolders
@@ -33,9 +37,9 @@ path_to_images: str, final_dataset_folder: str, surface_tag: str):
         path_to_images (str): Path to images containing the images, named
             in dataframe
         final_dataset_folder (str): Path to the final dataset folder
-        surface_tag (str): Surface tag to consider 
+        surface_tag (str): Surface tag to consider
     """
-    # filter data 
+    # filter data
     surface_data = image_data[image_data["surface"] == surface_tag]
 
     # extract all available smoothness tags
@@ -53,7 +57,7 @@ path_to_images: str, final_dataset_folder: str, surface_tag: str):
     for _, img in surface_data.iterrows():
         key = img["mapillary_key"]
         smoothness = img["smoothness"]
-        
+
         # path to original image
         img_name = key + ".jpg"
         orig_file = path_to_images / img_name
@@ -64,24 +68,19 @@ path_to_images: str, final_dataset_folder: str, surface_tag: str):
 
 
 if __name__ == "__main__":
-    path_to_data_csv = Path(__file__).parents[2] / \
-        "data" / "balanced_0" / "data.csv"
-    path_to_images =  Path(__file__).parents[2] / \
-        "data" / "balanced_0" / "images"
-    path_for_dataset = Path(__file__).parents[2] / \
-        "data" / "balanced_0" / "final"
+    path_to_data_csv = Path(__file__).parents[2] / "data" / "balanced_0" / "data.csv"
+    path_to_images = Path(__file__).parents[2] / "data" / "balanced_0" / "images"
+    path_for_dataset = Path(__file__).parents[2] / "data" / "balanced_0" / "final"
 
     try:
         os.mkdir(path_for_dataset)
     except:
-        pass 
-    
+        pass
+
     image_data = load_image_metadata(path_to_data_csv)
 
     image_data = image_data.iloc[0:100]
 
-    copy_images_to_smoothness_labeled_folders(image_data, 
-        path_to_images, path_for_dataset, "asphalt")
-
-
-    
+    copy_images_to_smoothness_labeled_folders(
+        image_data, path_to_images, path_for_dataset, "asphalt"
+    )

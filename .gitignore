@@ -129,7 +129,7 @@ dmypy.json
 .pyre/
 
 # data folder
-/data/
+data/
 
 # environment specific folder 
 .vscode/
