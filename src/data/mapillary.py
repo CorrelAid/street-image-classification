@@ -3,7 +3,9 @@ import logging
 import os
 import requests
 from typing import Tuple
+from pathlib import Path
 from urllib.request import urlretrieve
+from PIL import Image as PILImage
 
 from src.config import MAPILLARY_CLIENT_ID
 
@@ -142,3 +144,45 @@ def download_mapillary_object_detection_by_key(image_key: str, download_dir: str
             json.dump(data, f)
     else:
         logger.info(f"{json_local_path} already exists. Skipping Download.")
+
+
+def crop_image_flat(img_file: str, obj_detections: dict, output_folder: str) -> None:
+    """
+    Crops a given image to an axis-parallel rectangle which contains all Mapillary object 
+    dectections of a 'flat' type
+
+    Args:
+        img_file (str): path to image downloaded from mapillary
+        obj_dectections (dict): json containing object detections as downloaded 
+            from mapillary
+        output_folder (str): folder to save cropped image in
+
+    Returns:
+        None  
+    """
+    # Get min and max x and y coordinates for all flat segments associated with the given image
+    segments_flat = [(d['properties']['image_key'], 
+                 d['properties']['value'], 
+                 d['properties']['shape']['coordinates'], 
+                 d['properties']['score']) 
+                for d in obj_detections['features'] if d['properties']['value'].startswith('construction--flat--')]
+
+
+    # in case there are any relevant properties, save image, if not do nothing
+    if bool(segments_flat):
+    
+        # get all points of all flat segments
+        coords = [point for seg in segments_flat for point in seg[2][0]]
+        x_coords = [point[0] for point in coords]
+        y_coords = [point[1] for point in coords]
+        # careful: these are scaled between 0 and 1
+        x_min, x_max, y_min, y_max = min(x_coords), max(x_coords), min(y_coords), max(y_coords) 
+    
+        # Open and crop the image
+        img = PILImage.open(img_file)
+        width, height = img.size
+        cropped_image = img.crop((x_min * width, y_min * height, x_max * width, y_max * height))
+    
+        # Create output filename and save cropped image under same name as in input folder
+        out_file = Path(img_file).stem
+        cropped_image.save(f'{output_folder}/{out_file}.jpg')
