@@ -5,7 +5,8 @@ import pandas as pd
 from src.data.mapillary import crop_image_flat
 
 
-def crop_relevant_image_parts(output_dir: str, image_df: pd.DataFrame):
+def crop_relevant_image_parts(output_dir: str, image_df: pd.DataFrame, 
+copy_img_without_obj: bool = False):
     """Iterates over all images in the dataset and takes their
     object detections to crop the image to only contain the relevant parts,
     e.g. streets. The images are saved in a folder "cropped" in the given
@@ -16,6 +17,9 @@ def crop_relevant_image_parts(output_dir: str, image_df: pd.DataFrame):
             'images' and 'object_detections' subfolders)
         image_df (pd.DataFrame): dataframe containing all mapillary keys
             in the dataset
+        copy_img_without_obj (bool): if this flag is set to True, images 
+            without object detections are copied to the output directory
+            as well. Defaults to False
     """
     cropped_dir = f"{output_dir}/cropped"
     Path(cropped_dir).mkdir(exist_ok=True)
@@ -34,11 +38,11 @@ def crop_relevant_image_parts(output_dir: str, image_df: pd.DataFrame):
             obj_json = json.load(f)
 
         # crop image with object detections
-        crop_image_flat(image, obj_json, cropped_dir)
+        crop_image_flat(image, obj_json, cropped_dir, copy_img_without_obj)
 
 
 if __name__ == "__main__":
     path_for_dataset = Path(__file__).parents[2] / "data" / "example_dataset"
     path_to_data_csv = Path(__file__).parents[2] / "data" / "example_dataset" / "data.csv"
     data = pd.read_csv(path_to_data_csv)
-    crop_relevant_image_parts(path_for_dataset, data)
+    crop_relevant_image_parts(path_for_dataset, data, True)

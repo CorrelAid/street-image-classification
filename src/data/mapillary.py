@@ -6,6 +6,7 @@ from typing import Tuple
 from pathlib import Path
 from urllib.request import urlretrieve
 from PIL import Image as PILImage
+import shutil
 
 from src.config import MAPILLARY_CLIENT_ID
 
@@ -146,7 +147,7 @@ def download_mapillary_object_detection_by_key(image_key: str, download_dir: str
         logger.info(f"{json_local_path} already exists. Skipping Download.")
 
 
-def crop_image_flat(img_file: str, obj_detections: dict, output_folder: str) -> None:
+def crop_image_flat(img_file: str, obj_detections: dict, output_folder: str, copy_img_without_obj: bool) -> None:
     """
     Crops a given image to an axis-parallel rectangle which contains all Mapillary object 
     dectections of a 'flat' type
@@ -156,6 +157,7 @@ def crop_image_flat(img_file: str, obj_detections: dict, output_folder: str) -> 
         obj_dectections (dict): json containing object detections as downloaded 
             from mapillary
         output_folder (str): folder to save cropped image in
+        copy_img_without_obj (bool):
 
     Returns:
         None  
@@ -186,3 +188,7 @@ def crop_image_flat(img_file: str, obj_detections: dict, output_folder: str) -> 
         # Create output filename and save cropped image under same name as in input folder
         out_file = Path(img_file).stem
         cropped_image.save(f'{output_folder}/{out_file}.jpg')
+
+    elif copy_img_without_obj and not bool(segments_flat):
+        out_file = Path(img_file).stem
+        shutil.copy(img_file, f'{output_folder}/{out_file}.jpg')
