@@ -25,8 +25,13 @@ class CustomCropToLowerXPercent:
     def __call__(self, img):
         width, height = img.size
         new_height = math.floor(height * self.height_perc / 100)
-        return transforms.functional.crop(img, new_height, width, new_height, width)
-
+        cropped = transforms.functional.crop(img,
+                                             top=height - new_height, 
+                                             left=0, 
+                                             height=new_height, 
+                                             width=width)
+        return cropped
+    
 
 def load_split_train_valid(data_dir: str, valid_size = .2) -> \
     Union[torch.utils.data.DataLoader, torch.utils.data.DataLoader]:
