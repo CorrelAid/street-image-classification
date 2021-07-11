@@ -26,10 +26,11 @@ def load_split_train_valid(data_dir: str, valid_size = .2) -> \
             iteratable train and validation sets
     """
     # define image transformations
-    train_transforms = transforms.Compose([transforms.Resize(1200),
+    resize_size = (500, 500)
+    train_transforms = transforms.Compose([transforms.Resize(resize_size),
                                        transforms.ToTensor(),
                                        ])    
-    valid_transforms = transforms.Compose([transforms.Resize(1200),
+    valid_transforms = transforms.Compose([transforms.Resize(resize_size),
                                       transforms.ToTensor(),
                                       ])    
     
@@ -60,7 +61,7 @@ def load_split_train_valid(data_dir: str, valid_size = .2) -> \
 if __name__ == "__main__":
     # load data  
     data_dir = Path(__file__).parents[2] / \
-        "data" / "example_dataset" / "final"
+        "data" / "interim" / "sorted"
     trainloader, testloader = load_split_train_valid(data_dir, 0.2)
     print(trainloader.dataset.classes)
 
@@ -91,10 +92,12 @@ if __name__ == "__main__":
     epochs = 1
     steps = 0
     running_loss = 0
-    print_every = 10
+    print_every = 1
     train_losses, test_losses = [], []
 
+    
     # train model
+    print("Starting model training") 
     for epoch in range(epochs):
         for inputs, labels in trainloader:
             steps += 1
@@ -130,3 +133,4 @@ if __name__ == "__main__":
                     f"Test accuracy: {accuracy/len(testloader):.3f}")
                 running_loss = 0
                 model.train()
+        print("Finished model training")
