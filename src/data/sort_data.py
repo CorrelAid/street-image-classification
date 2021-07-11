@@ -43,7 +43,7 @@ def copy_images_to_smoothness_labeled_folders(
     surface_data = image_data[image_data["surface"] == surface_tag]
 
     # extract all available smoothness tags
-    smoothness_tags = surface_data["smoothness"].unique()
+    smoothness_tags = surface_data["smoothness_category"].unique()
 
     # create one folder per tag
     for tag in smoothness_tags:
@@ -56,7 +56,7 @@ def copy_images_to_smoothness_labeled_folders(
     # folder
     for _, img in surface_data.iterrows():
         key = img["mapillary_key"]
-        smoothness = img["smoothness"]
+        smoothness = img["smoothness_category"]
 
         # path to original image
         img_name = key + ".jpg"
