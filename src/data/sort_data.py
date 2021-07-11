@@ -79,7 +79,7 @@ if __name__ == "__main__":
 
     image_data = load_image_metadata(path_to_data_csv)
 
-    image_data = image_data.iloc[0:100]
+    image_data = image_data
 
     copy_images_to_smoothness_labeled_folders(
         image_data, path_to_images, path_for_dataset, "asphalt"

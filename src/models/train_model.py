@@ -4,11 +4,28 @@ from typing import Union
 #import matplotlib.pyplot as plt
 import numpy as np
 import torch
+import math
 from torch import nn
 from torch import optim
 import torch.nn.functional as F
 from torchvision import datasets, transforms, models
 from torch.utils.data.sampler import SubsetRandomSampler
+
+
+class CustomCropToLowerXPercent:
+    """crops an image to the bottom x percent of an image;
+    can be integrated to a pytorch.transform.Compose pipeline
+    """
+    def __init__(self, height_perc: int):
+        if isinstance(height_perc, int):
+            self.height_perc = height_perc
+        else:
+            self.height_perc = 100
+
+    def __call__(self, img):
+        width, height = img.size
+        new_height = math.floor(height * self.height_perc / 100)
+        return transforms.functional.crop(img, new_height, width, new_height, width)
 
 
 def load_split_train_valid(data_dir: str, valid_size = .2) -> \
@@ -28,9 +45,11 @@ def load_split_train_valid(data_dir: str, valid_size = .2) -> \
     # define image transformations
     resize_size = (500, 500)
     train_transforms = transforms.Compose([transforms.Resize(resize_size),
+                                        CustomCropToLowerXPercent(33),
                                        transforms.ToTensor(),
                                        ])    
     valid_transforms = transforms.Compose([transforms.Resize(resize_size),
+                                        CustomCropToLowerXPercent(33),
                                       transforms.ToTensor(),
                                       ])    
     
@@ -61,7 +80,7 @@ def load_split_train_valid(data_dir: str, valid_size = .2) -> \
 if __name__ == "__main__":
     # load data  
     data_dir = Path(__file__).parents[2] / \
-        "data" / "interim" / "sorted"
+        "data" / "balanced_0" / "final_asphalt"
     trainloader, testloader = load_split_train_valid(data_dir, 0.2)
     print(trainloader.dataset.classes)
 
