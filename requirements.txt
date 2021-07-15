@@ -18,3 +18,5 @@ geopandas
 pandas
 Pillow
 shutil
+torch
+torchvision
