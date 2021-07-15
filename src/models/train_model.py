@@ -2,7 +2,7 @@ import copy
 import math
 from pathlib import Path
 import time
-from typing import Callable, Optional, Tuple
+from typing import Callable, List, Optional, Tuple
 import os
 
 import pandas as pd
@@ -56,8 +56,8 @@ class StreetImageDataset(Dataset):
         self.label_to_id = {label: i for i, label in enumerate(self.csv_df[label_column].unique())}
         self.id_to_label = {i: label for i, label in enumerate(self.csv_df[label_column].unique())}
 
-    def get_classes(self):
-        return
+    def get_classes(self) -> List[str]:
+        return self.id_to_label.values()
 
     def __len__(self) -> int:
         return self.csv_df.shape[0]
@@ -132,6 +132,7 @@ if __name__ == "__main__":
         query="surface_category == 'paved'",
         transform=transform
     )
+    num_classes = len(dataset.get_classes())
 
     # split
     train_loader, test_loader = create_train_test_loader(dataset, train_ratio=train_ratio,
@@ -150,7 +151,7 @@ if __name__ == "__main__":
         nn.Linear(2048, 512),
         nn.ReLU(),
         nn.Dropout(0.2),
-        nn.Linear(512, 10),
+        nn.Linear(512, num_classes),
         nn.LogSoftmax(dim=1)
     )
 
