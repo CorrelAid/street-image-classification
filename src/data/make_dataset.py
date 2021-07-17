@@ -11,7 +11,9 @@ import pandas as pd
 import pyrosm
 
 from src.data.osm import add_mapillary_key_to_network, define_categories
-from src.data.mapillary import (download_mapillary_image_by_key, download_mapillary_object_detection_by_key)
+from src.data.mapillary import (download_mapillary_image_by_key,
+                                download_mapillary_object_detection_by_key)
+
 
 def split_dataframe(df: geopandas.GeoDataFrame, chunk_size: int) \
         -> Iterator[geopandas.GeoDataFrame]:
@@ -144,11 +146,7 @@ def main(input_filepath, street_buffer, shorten_street_by, min_quality_score, ch
     for _, row in street_mapillary_df.iterrows():
         download_mapillary_image_by_key(row["mapillary_key"], download_dir=image_dir)
         download_mapillary_object_detection_by_key(row["mapillary_key"],
-                                                     download_dir=object_detection_dir)
-
-        
-
-    
+                                                   download_dir=object_detection_dir)
 
 
 if __name__ == '__main__':

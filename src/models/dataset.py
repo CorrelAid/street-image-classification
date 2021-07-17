@@ -1,0 +1,82 @@
+import os
+from typing import Callable, List, Optional, Tuple
+
+import pandas as pd
+import torch
+from torch.utils.data import Dataset, DataLoader
+import torchvision
+
+
+class StreetImageDataset(Dataset):
+    """
+    Class for street image dataset.
+    """
+    def __init__(self, path: str, label_column: str, query: Optional[str] = None,
+                 transform: Optional[Callable] = None):
+        self._init_csv_df(path, query)
+        self._init_label_column(label_column)
+
+        self.images_path = f"{path}/images"
+        self.transform = transform
+
+    def _init_csv_df(self, path: str, query: Optional[str] = None):
+        csv_df = pd.read_csv(f"{path}/data.csv")
+        if query:
+            csv_df = csv_df.query(query)
+        self.csv_df = csv_df
+
+    def _init_label_column(self, label_column: str):
+        self.label_column = label_column
+        self.label_to_id = {label: i for i, label in enumerate(self.csv_df[label_column].unique())}
+        self.id_to_label = {i: label for i, label in enumerate(self.csv_df[label_column].unique())}
+
+    def get_classes(self) -> List[str]:
+        return list(self.id_to_label.values())
+
+    def __len__(self) -> int:
+        return self.csv_df.shape[0]
+
+    def __getitem__(self, idx) -> Tuple[torch.Tensor, str]:
+        if torch.is_tensor(idx):
+            idx = idx.tolist()
+
+        row = self.csv_df.iloc[idx]
+
+        image_path = os.path.join(self.images_path, f"{row['mapillary_key']}.jpg")
+        image = torchvision.io.read_image(image_path).float()
+        label = self.label_to_id[row[self.label_column]]
+
+        if self.transform:
+            image = self.transform(image)
+
+        return image, label
+
+
+def split_train_val(dataset: Dataset, train_ratio: float) -> Tuple[Dataset, Dataset]:
+    """
+    Split Dataset into train and validation dataset.
+    """
+    if train_ratio < 0.01 or train_ratio > 0.99:
+        raise Exception("Train ratio should be between 0.01 and 0.99")
+
+    train_size = int(train_ratio * len(dataset))
+    val_size = len(dataset) - train_size
+
+    train_dataset, val_dataset = torch.utils.data.random_split(dataset, [train_size, val_size])
+
+    return train_dataset, val_dataset
+
+
+def create_train_val_loader(dataset: Dataset, train_ratio: float, batch_size: int,
+                            num_workers: int = 0) \
+        -> Tuple[DataLoader, DataLoader]:
+    """
+    Create DataLoader for train and validation dataset.
+    """
+    train_dataset, val_dataset = split_train_val(dataset, train_ratio)
+
+    train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True,
+                              num_workers=num_workers)
+    val_loader = DataLoader(val_dataset, batch_size=batch_size, num_workers=num_workers)
+
+    return train_loader, val_loader

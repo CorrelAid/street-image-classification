@@ -134,3 +134,6 @@ data/
 # environment specific folder 
 .vscode/
 .idea/
+
+# PyTorch data
+lightning_logs/
