@@ -15,7 +15,7 @@ if __name__ == "__main__":
     train_ratio = 0.8
     batch_size = 64
     num_workers = 4
-    learning_rate = 0.3
+    learning_rate = 0.05
 
     num_epochs = 10
 

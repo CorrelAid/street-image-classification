@@ -39,7 +39,7 @@ class StreetImageModel(pl.LightningModule):
         return self.model(x)
 
     def configure_optimizers(self):
-        optimizer = torch.optim.Adam(self.model.fc.parameters(), lr=self.hparams.learning_rate)
+        optimizer = torch.optim.Adam(self.parameters(), lr=self.hparams.learning_rate)
         return optimizer
 
     def training_step(self, batch, batch_idx):
@@ -48,9 +48,10 @@ class StreetImageModel(pl.LightningModule):
         _, preds = torch.max(outputs, 1)
 
         self.train_acc(preds, labels)
-        self.log('train_acc', self.train_acc, on_step=True, on_epoch=False, prog_bar=True)
+        self.log("train_acc", self.train_acc, on_step=True, on_epoch=False, prog_bar=True)
 
         loss = self.criterion(outputs, labels)
+        self.log("train_loss", loss, on_step=True, on_epoch=False)
         return loss
 
     def validation_step(self, batch, batch_idx):
@@ -59,7 +60,8 @@ class StreetImageModel(pl.LightningModule):
         _, preds = torch.max(outputs, 1)
 
         self.val_acc(preds, labels)
-        self.log('val_acc', self.val_acc, on_step=False, on_epoch=True, prog_bar=True)
+        self.log("val_acc", self.val_acc, on_step=False, on_epoch=True, prog_bar=True)
 
         loss = self.criterion(outputs, labels)
+        self.log("val_loss", loss, on_step=False, on_epoch=True)
         return loss
