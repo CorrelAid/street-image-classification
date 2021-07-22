@@ -11,6 +11,7 @@ import shutil
 from src.config import MAPILLARY_CLIENT_ID
 
 logger = logging.getLogger(__name__)
+logger.setLevel(logging.WARNING)
 
 
 def download_mapillary_image_information(url: str, file_path: str = None) -> dict:

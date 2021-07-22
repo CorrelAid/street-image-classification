@@ -27,8 +27,10 @@ class StreetImageDataset(Dataset):
 
     def _init_label_column(self, label_column: str):
         self.label_column = label_column
-        self.label_to_id = {label: i for i, label in enumerate(self.csv_df[label_column].unique())}
-        self.id_to_label = {i: label for i, label in enumerate(self.csv_df[label_column].unique())}
+        self.smoothness_to_id = {"bad": 2, "intermediate":1, "good": 0}
+        self.surface_to_id = {"cobblestone": 2, "unpaved": 1, "paved": 0}
+        #self.label_to_id = {label: i for i, label in enumerate(self.csv_df[label_column].unique())}
+        #self.id_to_label = {i: label for i, label in enumerate(self.csv_df[label_column].unique())}
 
     def get_classes(self) -> List[str]:
         return list(self.id_to_label.values())
@@ -43,13 +45,21 @@ class StreetImageDataset(Dataset):
         row = self.csv_df.iloc[idx]
 
         image_path = os.path.join(self.images_path, f"{row['mapillary_key']}.jpg")
-        image = torchvision.io.read_image(image_path).float()
-        label = self.label_to_id[row[self.label_column]]
+        try:
+            image = torchvision.io.read_image(image_path).float()
+        except RuntimeError as e:
+            print("Exception:", e)
+            print("image:", image_path)
+            raise e
+        smoothness_label = self.smoothness_to_id[row["smoothness_category"]]
+        surface_label = self.surface_to_id[row["surface_category"]]
+        #label = self.label_to_id[row[self.label_column]]
+        
 
         if self.transform:
             image = self.transform(image)
 
-        return image, label
+        return {"image": image, "surface": surface_label, "smoothness": smoothness_label, "image_path": image_path} 
 
 
 def split_train_val(dataset: Dataset, train_ratio: float) -> Tuple[Dataset, Dataset]:
