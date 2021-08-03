@@ -21,3 +21,4 @@ shutil
 torch
 torchvision
 pytorch-lightning
+flask
