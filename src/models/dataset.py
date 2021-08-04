@@ -8,48 +8,68 @@ import torchvision
 
 
 class StreetImageDataset(Dataset):
+    smoothness_to_id = {"bad": 2, "intermediate": 1, "good": 0}
+    surface_to_id = {"cobblestone": 2, "unpaved": 1, "paved": 0}
+
     """
     Class for street image dataset.
     """
-    def __init__(self, path: str, label_column: str, query: Optional[str] = None,
-                 transform: Optional[Callable] = None):
-        self._init_csv_df(path, query)
-        self._init_label_column(label_column)
+    def __init__(self, path: str, transform: Optional[Callable] = None):
+        self._init_csv_df(path)
 
         self.images_path = f"{path}/images"
         self.transform = transform
 
-    def _init_csv_df(self, path: str, query: Optional[str] = None):
-        csv_df = pd.read_csv(f"{path}/data.csv")
-        if query:
-            csv_df = csv_df.query(query)
-        self.csv_df = csv_df
+    def _init_csv_df(self, path: str):
+        self.csv_df = pd.read_csv(f"{path}/data.csv")
 
-    def _init_label_column(self, label_column: str):
-        self.label_column = label_column
-        self.label_to_id = {label: i for i, label in enumerate(self.csv_df[label_column].unique())}
-        self.id_to_label = {i: label for i, label in enumerate(self.csv_df[label_column].unique())}
+    @classmethod
+    def get_smoothness_by_id(cls, identifier: int) -> Optional[str]:
+        for key, value in cls.smoothness_to_id.items():
+            if value == identifier:
+                return key
 
-    def get_classes(self) -> List[str]:
-        return list(self.id_to_label.values())
+    @classmethod
+    def get_surface_by_id(cls, identifier: int) -> Optional[str]:
+        for key, value in cls.surface_to_id.items():
+            if value == identifier:
+                return key
+
+    def get_smoothness_classes(self) -> List[str]:
+        return list(self.smoothness_to_id.keys())
+
+    def get_surface_classes(self) -> List[str]:
+        return list(self.surface_to_id.keys())
 
     def __len__(self) -> int:
         return self.csv_df.shape[0]
 
-    def __getitem__(self, idx) -> Tuple[torch.Tensor, str]:
+    def __getitem__(self, idx) -> dict:
         if torch.is_tensor(idx):
             idx = idx.tolist()
 
         row = self.csv_df.iloc[idx]
 
         image_path = os.path.join(self.images_path, f"{row['mapillary_key']}.jpg")
-        image = torchvision.io.read_image(image_path).float()
-        label = self.label_to_id[row[self.label_column]]
+
+        try:
+            image = torchvision.io.read_image(image_path).float()
+        except RuntimeError as e:
+            print("Exception:", e)
+            print("image:", image_path)
+            raise e
+
+        smoothness_label = self.smoothness_to_id[row["smoothness_category"]]
+        surface_label = self.surface_to_id[row["surface_category"]]
 
         if self.transform:
             image = self.transform(image)
 
-        return image, label
+        return {
+            "image": image,
+            "surface": surface_label,
+            "smoothness": smoothness_label
+        }
 
 
 def split_train_val(dataset: Dataset, train_ratio: float) -> Tuple[Dataset, Dataset]:

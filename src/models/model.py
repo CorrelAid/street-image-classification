@@ -1,67 +1,127 @@
+from typing import Tuple
+
 import torch
 import torchmetrics
 import torchvision
+from torchvision.models.mobilenetv3 import _mobilenet_v3_conf
 import pytorch_lightning as pl
 
 
-class StreetImageModel(pl.LightningModule):
-    def __init__(self, num_classes: int, learning_rate: float):
-        super().__init__()
-        self.save_hyperparameters()
+class MTLMobileNetV3(torchvision.models.MobileNetV3):
+    def __init__(self, inverted_residual_setting, last_channel):
+        super().__init__(inverted_residual_setting, last_channel)
 
-        self._init_model()
-        self._init_criterion()
-        self._init_metrics()
+        self.last_channel = last_channel
 
-    def _init_model(self):
-        self.model = torchvision.models.resnet50(pretrained=True)
+        lastconv_input_channels = inverted_residual_setting[-1].out_channels
+        self.lastconv_output_channels = 6 * lastconv_input_channels
 
-        for param in self.model.parameters():
-            param.requires_grad = False
-
-        # redefine fully connected layer
-        self.model.fc = torch.nn.Sequential(
-            torch.nn.Linear(2048, 512),
-            torch.nn.ReLU(),
-            torch.nn.Dropout(0.2),
-            torch.nn.Linear(512, self.hparams.num_classes),
+    def add_mtl_head(self, num_classes: int):
+        self.classifier = torch.nn.Sequential(
+            torch.nn.Linear(self.lastconv_output_channels, self.last_channel),
+            torch.nn.Hardswish(inplace=True),
+            torch.nn.Dropout(p=0.2, inplace=True)
+        )
+        self.classifier1 = torch.nn.Sequential(
+            torch.nn.Linear(self.last_channel, num_classes),
+            torch.nn.LogSoftmax(dim=1)
+        )
+        self.classifier2 = torch.nn.Sequential(
+            torch.nn.Linear(self.last_channel, num_classes),
             torch.nn.LogSoftmax(dim=1)
         )
 
-    def _init_criterion(self):
-        self.criterion = torch.nn.NLLLoss()
+    def _forward_impl(self, x: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]:
+        x = self.features(x)
 
-    def _init_metrics(self):
-        self.train_acc = torchmetrics.Accuracy()
-        self.val_acc = torchmetrics.Accuracy()
+        x = self.avgpool(x)
+        x = torch.flatten(x, 1)
+
+        x = self.classifier(x)
+        x1 = self.classifier1(x)
+        x2 = self.classifier2(x)
+        return x1, x2
+
+
+def load_pretrained_mtl_mobilenet_v3_large(num_classes: int) -> MTLMobileNetV3:
+    arch = "mobilenet_v3_large"
+    inverted_residual_setting, last_channel = _mobilenet_v3_conf(arch)
+
+    model = MTLMobileNetV3(inverted_residual_setting, last_channel)
+    state_dict = torchvision.models.mobilenetv3.load_state_dict_from_url(
+        torchvision.models.mobilenetv3.model_urls[arch], progress=True)
+    model.load_state_dict(state_dict)
+    model.add_mtl_head(num_classes=num_classes)
+    return model
+
+
+def get_metric_dict(mode: str, num_classes: int) -> dict:
+    kwargs = {"num_classes": num_classes, "average": "weighted"}
+    metric_dict = {
+        f"accuracy_{mode}_surface": torchmetrics.Accuracy(**kwargs),
+        f"accuracy_{mode}_smoothness": torchmetrics.Accuracy(**kwargs),
+        f"precision_{mode}_surface": torchmetrics.Precision(**kwargs),
+        f"precision_{mode}_smoothness": torchmetrics.Precision(**kwargs),
+        f"f1_{mode}_surface": torchmetrics.F1(**kwargs),
+        f"f1_{mode}_smoothness": torchmetrics.F1(**kwargs),
+    }
+    return metric_dict
+
+
+class CargoRocketModel(pl.LightningModule):
+    def __init__(self, num_classes: int = 3, learning_rate: float = 1e-3):
+        super().__init__()
+        self.num_classes = num_classes
+        self.model = load_pretrained_mtl_mobilenet_v3_large(num_classes=self.num_classes)
+        self.criterion1 = torch.nn.NLLLoss()
+        self.criterion2 = torch.nn.NLLLoss()
+        self.learning_rate = learning_rate
+
+        self.train_metrics = get_metric_dict(mode="train", num_classes=self.num_classes)
+        self.val_metrics = get_metric_dict(mode="val", num_classes=self.num_classes)
 
     def forward(self, x):
         return self.model(x)
 
-    def configure_optimizers(self):
-        optimizer = torch.optim.Adam(self.parameters(), lr=self.hparams.learning_rate)
-        return optimizer
-
     def training_step(self, batch, batch_idx):
-        inputs, labels = batch
-        outputs = self(inputs)
-        _, preds = torch.max(outputs, 1)
+        x = batch["image"]
+        y1 = batch["surface"]
+        y2 = batch["smoothness"]
 
-        self.train_acc(preds, labels)
-        self.log("train_acc", self.train_acc, on_step=True, on_epoch=False, prog_bar=True)
+        y_hat1, y_hat2 = self.model(x)
+        loss1 = self.criterion1(y_hat1, y1)
+        loss2 = self.criterion2(y_hat2, y2)
+        loss = loss1 + loss2
+        self.log('train_loss', loss)
 
-        loss = self.criterion(outputs, labels)
-        self.log("train_loss", loss, on_step=True, on_epoch=False)
+        for metric_name, metric in self.train_metrics.items():
+            if "surface" in metric_name:
+                metric(y_hat1.cpu(), y1.cpu())
+                self.log(metric_name, metric, on_epoch=True)
+            elif "smoothness" in metric_name:
+                metric(y_hat2.cpu(), y2.cpu())
+                self.log(metric_name, metric, on_epoch=True)
+
         return loss
 
     def validation_step(self, batch, batch_idx):
-        inputs, labels = batch
-        outputs = self(inputs)
-        _, preds = torch.max(outputs, 1)
+        x = batch["image"]
+        y1 = batch["surface"]
+        y2 = batch["smoothness"]
 
-        self.val_acc(preds, labels)
-        self.log("val_acc", self.val_acc, on_step=False, on_epoch=True, prog_bar=True)
+        y_hat1, y_hat2 = self.model(x)
+        loss1 = self.criterion1(y_hat1, y1)
+        loss2 = self.criterion2(y_hat2, y2)
+        loss = loss1 + loss2
+        self.log('val_loss', loss)
 
-        loss = self.criterion(outputs, labels)
-        self.log("val_loss", loss, on_step=False, on_epoch=True)
-        return loss
+        for metric_name, metric in self.val_metrics.items():
+            if "surface" in metric_name:
+                metric(y_hat1.cpu(), y1.cpu())
+                self.log(metric_name, metric, on_epoch=True, prog_bar=True)
+            elif "smoothness" in metric_name:
+                metric(preds=y_hat2.cpu(), target=y2.cpu())
+                self.log(metric_name, metric, on_epoch=True, prog_bar=True)
+
+    def configure_optimizers(self):
+        return torch.optim.Adam(self.parameters(), lr=self.learning_rate)
