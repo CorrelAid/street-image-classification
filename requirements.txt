@@ -19,6 +19,7 @@ pandas
 Pillow
 shutil
 torch
+torchmetrics
 torchvision
 pytorch-lightning
 flask

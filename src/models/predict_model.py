@@ -1,6 +1,6 @@
 import torch
+import torchvision
 from typing import Union
-from src.models.model import CargoRocketModel
 from pathlib import Path
 from dotenv import find_dotenv, load_dotenv
 from urllib.request import urlretrieve
@@ -8,10 +8,10 @@ import shutil
 import json 
 
 from src.config import MAPILLARY_TOKEN
-from src.models.preprocessing import CustomCropToLowerXPercent
-from torchvision import transforms
-import torchvision
-from PIL import Image
+from src.models.model import CargoRocketModel
+from src.models.dataset import StreetImageDataset
+from src.models.preprocessing import get_predict_image_transform
+
 from src.config import PROJECT_ROOT_PATH
 import requests
 import traceback
@@ -64,15 +64,7 @@ def transform_image(img_path: Path) -> None:
     # define transformation steps
     crop_to_lower_percentage = 50
     output_size = (256, 256)
-    transform = transforms.Compose([
-        CustomCropToLowerXPercent(crop_to_lower_percentage),
-        transforms.Resize(700),  # get an image with height 700px
-        transforms.CenterCrop((700, 1000)),  # get the center part with a HxW of 700x1000
-        transforms.RandomCrop(500),  # get a 500x500px square
-        transforms.Resize(output_size),
-        transforms.RandomHorizontalFlip(),
-        transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
-    ])
+    transform = get_predict_image_transform()
 
     # load image
     img = torchvision.io.read_image(str(img_path)).float()
@@ -101,12 +93,8 @@ def predict_image(img_tensor) -> Union[str, str]:
     surface_id = surface_pred.argmax(axis=1).item()
     smoothness_id = smoothness_pred.argmax(axis=1).item()
 
-    # match class ids back to actual string class name
-    smoothness_to_name = {2: "bad", 1: "intermediate", 0: "good"}
-    surface_to_name = {2: "cobblestone", 1: "unpaved", 0: "paved"}
-
-    smoothness_string = smoothness_to_name[smoothness_id]
-    surface_string = surface_to_name[surface_id]
+    surface_string = StreetImageDataset.get_surface_by_id(surface_id.item())
+    smoothness_string = StreetImageDataset.get_smoothness_by_id(smoothness_id.item())
 
     return smoothness_string, surface_string
 
@@ -161,6 +149,6 @@ if __name__ == "__main__":
 
 
 
-    
 
-    
+
+
