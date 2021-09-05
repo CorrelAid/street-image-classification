@@ -7,7 +7,7 @@ from urllib.request import urlretrieve
 import shutil
 import json 
 
-from src.config import MAPILLARY_TOKEN
+from src.config import MAPILLARY_TOKEN_v4
 from src.models.model import CargoRocketModel
 from src.models.dataset import StreetImageDataset
 from src.models.preprocessing import get_predict_image_transform
@@ -45,7 +45,7 @@ def download_mapillary_image(key: str, tmp_dir: Path) -> Path:
     img_name = f"{key}.jpeg"
     local_path = tmp_dir / img_name
 
-    url = f"https://graph.mapillary.com/{key}?access_token={MAPILLARY_TOKEN}&fields=id,thumb_2048_url"
+    url = f"https://graph.mapillary.com/{key}?access_token={MAPILLARY_TOKEN_v4}&fields=id,thumb_2048_url"
     r_image = requests.get(url, timeout=300)
 
     fields_dict = r_image.json()
