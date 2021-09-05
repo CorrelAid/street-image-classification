@@ -24,13 +24,16 @@ Project Organization
     ├── models             <- Trained and serialized models, model predictions, or model summaries
     │
     ├── notebooks          <- Jupyter notebooks. Naming convention is a number (for ordering),
-    │                         the creator's initials, and a short `-` delimited description, e.g.
-    │                         `1.0-jqp-initial-data-exploration`.
-    │
-    ├── references         <- Data dictionaries, manuals, and all other explanatory materials.
-    │
-    ├── reports            <- Generated analysis as HTML, PDF, LaTeX, etc.
-    │   └── figures        <- Generated graphics and figures to be used in reporting
+    │   └── dl-training.ipynb           <- Preprocessing and training of models using the downloaded dataset.
+    │   └── image-transforms-test.ipynb <- Visualize some dataset images, test some transformations for the 
+    │                                              training and get a statistics of the occuring image sizes of the dataset.
+    │   └── Object Detections.ipynb     <- For some images get the object detections and crop the upper part of 
+    │                                              the images to only contain street surface and not the sky.  
+    │   └── osm_mapillary.ipynb         <- Tests to read a Open Street Map .pbf file of Berlin, extract
+    │                                              cycle lanes and get the mapillary image keys for the extracted cycle 
+    │                                              lanes/streets. 
+    │   └── osm_statistics.ipynb        <- Read a a Open Street Map .pbf file of Berlin and get statistics of
+    │                                              the tagged surfaces and smoothnesses.
     │
     ├── requirements.txt   <- The requirements file for reproducing the analysis environment, e.g.
     │                         generated with `pip freeze > requirements.txt`
@@ -40,19 +43,23 @@ Project Organization
     │   ├── __init__.py    <- Makes src a Python module
     │   │
     │   ├── data           <- Scripts to download or generate data
+    │   │   └── download_images.py
+    │   │   └── download_object_detections.py
+    │   │   └── image_postprocessing.py
     │   │   └── make_dataset.py
-    │   │
-    │   ├── features       <- Scripts to turn raw data into features for modeling
-    │   │   └── build_features.py
-    │   │
-    │   ├── models         <- Scripts to train models and then use trained models to make
-    │   │   │                 predictions
-    │   │   ├── predict_model.py
-    │   │   └── train_model.py
-    │   │
-    │   └── visualization  <- Scripts to create exploratory and results oriented visualizations
-    │       └── visualize.py
+    │   │   └── postprocessing_csv.py
+    │   │   └── mapillary.py
+    │   │   └── osm.py
+    │   │   └── sort_data.py
 
+    │   │
+    │   ├── models  <- Scripts to train models and then use trained models to make
+    │   │   │                 predictions
+    │   │   ├── dataset.py          <- pytorch Dataset class of the image data and labels. 
+    │   │   ├── model.py            <- MobileNetV3 multi-task learning model pytorch_lightning module
+    │   │   ├── predict_model.py    <- Flask API to get a prediction for a mapillary image key
+    │   │   ├── preprocessing.py    <- Specify transformations of the dataset for training and prediction.
+    │   │   └── train_model.py      <- Script to train (probably old version) of the model.
 
 --------
 
