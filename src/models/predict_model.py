@@ -94,8 +94,8 @@ def predict_image(img_tensor: torch.Tensor) -> Tuple[str, str]:
     surface_id = surface_pred.argmax(axis=1).item()
     smoothness_id = smoothness_pred.argmax(axis=1).item()
 
-    surface_string = StreetImageDataset.get_surface_by_id(surface_id.item())
-    smoothness_string = StreetImageDataset.get_smoothness_by_id(smoothness_id.item())
+    surface_string = StreetImageDataset.get_surface_by_id(surface_id)
+    smoothness_string = StreetImageDataset.get_smoothness_by_id(smoothness_id)
 
     return smoothness_string, surface_string
 
