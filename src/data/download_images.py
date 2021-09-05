@@ -15,6 +15,11 @@ from src.data.mapillary import download_mapillary_image_by_key
 def main(dataset_path):
     """
     This script loads the images for a specific dataset.
+
+    A dataset is specified by a file 'data.csv' in the dataset directory specified as command
+    line argument. This dataset has to contain a column 'mapillary_key', for which data should
+    be downloaded. For each of this keys/ids of the csv file, images are downloaded into the
+    subdirectory 'images' and object detections into 'object_detections'.
     """
     logger = logging.getLogger(__name__)
     logger.setLevel(logging.WARNING)

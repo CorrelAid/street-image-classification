@@ -29,8 +29,11 @@ def split_dataframe(df: geopandas.GeoDataFrame, chunk_size: int) \
 @click.argument('min_quality_score', type=click.INT)
 @click.argument('chunk_size', type=click.INT)
 @click.argument('output_dir', type=click.Path())
-def main(input_filepath, street_buffer, shorten_street_by, min_quality_score, chunk_size,
-         output_dir):
+def main(input_filepath: str,
+         street_buffer: float, shorten_street_by: float,
+         min_quality_score: int,
+         chunk_size: int,
+         output_dir: str):
     """ Runs data processing scripts to turn raw data from (../raw) into
         cleaned data ready to be analyzed (saved in ../processed).
     """

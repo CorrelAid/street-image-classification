@@ -5,14 +5,17 @@ import geopandas
 from src.data.osm import define_categories
 
 
-def split_data(df, num_parts=4):
+def split_data(df: geopandas.GeoDataFrame, num_parts: int = 4):
     """
-    Split a dataframe into num_parts chunks
+    Split a dataframe into num_parts chunks.
+
+    This can be used to produce multiple dataset files and download the data concurrently
+    on multiple computers.
     """
     return np.array_split(df, num_parts)
 
 
-def balance_data(df, group_size, group_cols = ['surface_category', 'smoothness_category']):
+def balance_data(df: geopandas.GeoDataFrame, group_size, group_cols = ['surface_category', 'smoothness_category']):
     """
     Undersample groups of a dataframe so they have a maximum size of group_size.
     """
