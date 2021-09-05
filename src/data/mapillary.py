@@ -142,6 +142,8 @@ def download_mapillary_object_detection_by_key(image_key: str, download_dir: str
         r = requests.get(url, timeout=300)
         data = r.json()
 
+        if "code" in data and data["code"] == "client_id_invalid":
+            raise RuntimeError("The provided client id is invalid!", data)
         with open(json_local_path, 'w') as f:
             json.dump(data, f)
     else:
