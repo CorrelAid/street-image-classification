@@ -8,7 +8,7 @@ from urllib.request import urlretrieve
 from PIL import Image as PILImage
 import shutil
 
-from src.config import MAPILLARY_CLIENT_ID
+from src.config import MAPILLARY_CLIENT_ID_v3
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.WARNING)
@@ -98,7 +98,7 @@ def download_mapillary_image_information_by_bbox(bbox: Tuple[float], min_quality
     # sort_by=key enables pagination
     url = (
         'https://a.mapillary.com/v3/images?client_id={}&bbox={}&per_page=500&sort_by=key&min_quality_score={}'
-    ).format(MAPILLARY_CLIENT_ID, bbox_str, min_quality_score)
+    ).format(MAPILLARY_CLIENT_ID_v3, bbox_str, min_quality_score)
 
     # download data from given URL
     return download_mapillary_image_information(url)
@@ -138,10 +138,12 @@ def download_mapillary_object_detection_by_key(image_key: str, download_dir: str
         # request for object detection layer of a certain image (given by image key)
         url = (
             "https://a.mapillary.com/v3/images/{}/object_detections/{}?client_id={}"
-        ).format(image_key, layer, MAPILLARY_CLIENT_ID)
+        ).format(image_key, layer, MAPILLARY_CLIENT_ID_v3)
         r = requests.get(url, timeout=300)
         data = r.json()
 
+        if "code" in data and data["code"] == "client_id_invalid":
+            raise RuntimeError("The provided client id is invalid!", data)
         with open(json_local_path, 'w') as f:
             json.dump(data, f)
     else:

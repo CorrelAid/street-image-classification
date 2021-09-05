@@ -4,10 +4,11 @@ import logging
 import os
 from pathlib import Path
 from dotenv import find_dotenv, load_dotenv
+from tqdm import tqdm
 
 import pandas as pd
 
-from data.mapillary import download_mapillary_object_detection_by_key
+from src.data.mapillary import download_mapillary_object_detection_by_key
 
 
 @click.command()
@@ -38,7 +39,7 @@ def main(dataset_path):
     Path(image_dir).mkdir(exist_ok=True)
     Path(object_detection_dir).mkdir(exist_ok=True)
 
-    for mapillary_key in mapillary_keys:
+    for mapillary_key in tqdm(mapillary_keys, desc="Downloading object detections"):
         download_mapillary_object_detection_by_key(mapillary_key, download_dir=object_detection_dir)
 
 
