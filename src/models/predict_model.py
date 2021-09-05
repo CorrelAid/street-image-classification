@@ -1,6 +1,7 @@
+import flask
 import torch
 import torchvision
-from typing import Union
+from typing import Tuple
 from pathlib import Path
 from dotenv import find_dotenv, load_dotenv
 from urllib.request import urlretrieve
@@ -27,7 +28,7 @@ checkpoint_path = PROJECT_ROOT_PATH / "models" / \
         "mobilenetv3_large-epoch=97-val_loss=0.93-accuracy_val_surface=0.9231.ckpt"
 
 MODEL = CargoRocketModel.load_from_checkpoint(checkpoint_path=checkpoint_path)
-MODEL.eval() # set model to evaluation mode
+MODEL.eval()  # set model to evaluation mode
 
 
 def download_mapillary_image(key: str, tmp_dir: Path) -> Path:
@@ -55,7 +56,7 @@ def download_mapillary_image(key: str, tmp_dir: Path) -> Path:
     return local_path
 
 
-def transform_image(img_path: Path) -> None:
+def transform_image(img_path: Path) -> torch.Tensor:
     """Transforms an image in the same way as the training images
 
     Args:
@@ -77,17 +78,17 @@ def transform_image(img_path: Path) -> None:
 
     return input
 
-def predict_image(img_tensor) -> Union[str, str]:
+
+def predict_image(img_tensor: torch.Tensor) -> Tuple[str, str]:
     """Predicts a given image tensor and returns the predicted
     smoothness and surface strings
 
     Args:
-        img_tensor ([type]): [description]
+        img_tensor (torch.Tensor): Image to predict
 
     Returns:
-        Union[str, str]: surface, smoothness
+        Tuple[str, str]: surface, smoothness as string representation
     """
-    # predict
     surface_pred, smoothness_pred = MODEL(img_tensor)
 
     surface_id = surface_pred.argmax(axis=1).item()
@@ -100,7 +101,7 @@ def predict_image(img_tensor) -> Union[str, str]:
 
 
 @app.route('/predict', methods=['GET'])
-def predict() -> str:
+def predict() -> flask.Response:
     """Takes in one or several mapillary image keys using
     the get field "mapillary_keys" which includes either a 
     string of one image or a list with several images
@@ -125,12 +126,11 @@ def predict() -> str:
         # iterate over all keys and get a prediction
         predictions = {}
         for image_id in image_ids:
-            print(image_id)
+            print("Getting prediction for image_id={image_id}".format(image_id=image_id))
             image_save_path = download_mapillary_image(image_id, tmp_dir)
             img_tensor = transform_image(image_save_path)
             smoothness, surface = predict_image(img_tensor)
-            predictions[image_id] = {"smoothness": smoothness, \
-                "surface": surface}
+            predictions[image_id] = {"smoothness": smoothness, "surface": surface}
 
         # delete temporary directory
         shutil.rmtree(tmp_dir)
