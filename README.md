@@ -1,6 +1,7 @@
 street_image_classification
 ==============================
-Repository for the project on classifying street image data - in cooperation with cargorocket
+Repository for the project on classifying street image data - in cooperation with 
+[CargoRocket](https://cargorocket.de/).
 
 Setting up
 ------------
