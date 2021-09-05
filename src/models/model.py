@@ -45,7 +45,8 @@ class MTLMobileNetV3(torchvision.models.MobileNetV3):
 
 def load_pretrained_mtl_mobilenet_v3_large(num_classes: int) -> MTLMobileNetV3:
     arch = "mobilenet_v3_large"
-    inverted_residual_setting, last_channel = _mobilenet_v3_conf(arch)
+    params = dict()
+    inverted_residual_setting, last_channel = _mobilenet_v3_conf(arch, params)
 
     model = MTLMobileNetV3(inverted_residual_setting, last_channel)
     state_dict = torchvision.models.mobilenetv3.load_state_dict_from_url(
