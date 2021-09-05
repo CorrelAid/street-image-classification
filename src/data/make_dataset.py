@@ -30,12 +30,30 @@ def split_dataframe(df: geopandas.GeoDataFrame, chunk_size: int) \
 @click.argument('chunk_size', type=click.INT)
 @click.argument('output_dir', type=click.Path())
 def main(input_filepath: str,
-         street_buffer: float, shorten_street_by: float,
+         street_buffer: float,
+         shorten_street_by: float,
          min_quality_score: int,
          chunk_size: int,
-         output_dir: str):
-    """ Runs data processing scripts to turn raw data from (../raw) into
-        cleaned data ready to be analyzed (saved in ../processed).
+         output_dir: str) -> None:
+    """Runs data processing scripts to turn raw data to cleaned data for analysis and training.
+
+    The raw data (usually under '../raw') is loaded, cleaned and transformed for analysis and
+    training with it and saved (usually under '../processed')
+
+    Args:
+        input_filepath: Path to a open street map data file to load the road network from.
+        street_buffer: Size of the buffer to draw around each street to search images in.
+        shorten_street_by: Length of each end of a street it is shortened by. This avoids
+            (some) misclassified images, when a image at an intersection is added as image of
+            two streets (with potentially different surfaces and smoothnesses.
+        min_quality_score: Minimum quality of the image as categorized by Mapillary. [0...5].
+            Usually 4 or 5.
+        chunk_size: ?
+        output_dir: Directory, where the dataset should be created.
+
+    Returns:
+        None
+
     """
     logger = logging.getLogger(__name__)
     logger.info('making final data set from raw data')
