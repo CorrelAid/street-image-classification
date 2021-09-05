@@ -8,7 +8,7 @@ from tqdm import tqdm
 
 import pandas as pd
 
-from data.mapillary import download_mapillary_object_detection_by_key
+from src.data.mapillary import download_mapillary_object_detection_by_key
 
 
 @click.command()
