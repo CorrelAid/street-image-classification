@@ -6,7 +6,7 @@ from pathlib import Path
 from dotenv import find_dotenv, load_dotenv
 from urllib.request import urlretrieve
 import shutil
-import json 
+import json
 
 from src.config import MAPILLARY_TOKEN_v4
 from src.models.model import CargoRocketModel
@@ -18,14 +18,18 @@ import requests
 import traceback
 
 from flask import Flask, jsonify, request
+
 load_dotenv(find_dotenv())
 
 app = Flask(__name__)
 
 
 # Load model so that it is always available
-checkpoint_path = PROJECT_ROOT_PATH / "models" / \
-        "mobilenetv3_large-epoch=97-val_loss=0.93-accuracy_val_surface=0.9231.ckpt"
+checkpoint_path = (
+    PROJECT_ROOT_PATH
+    / "models"
+    / "mobilenetv3_large-epoch=97-val_loss=0.93-accuracy_val_surface=0.9231.ckpt"
+)
 
 MODEL = CargoRocketModel.load_from_checkpoint(checkpoint_path=checkpoint_path)
 MODEL.eval()  # set model to evaluation mode
@@ -38,7 +42,7 @@ def download_mapillary_image(key: str, tmp_dir: Path) -> Path:
     Args:
         key (str): Mapillary image key
         tmp_dir (Path): Temporary folder to save the downloaded
-            images to 
+            images to
 
     Returns:
         Path: path to saved image
@@ -69,7 +73,7 @@ def transform_image(img_path: Path) -> torch.Tensor:
 
     # load image
     img = torchvision.io.read_image(str(img_path)).float()
-    
+
     # perform transformation
     input = transform(img)
 
@@ -100,29 +104,29 @@ def predict_image(img_tensor: torch.Tensor) -> Tuple[str, str]:
     return smoothness_string, surface_string
 
 
-@app.route('/predict', methods=['GET'])
+@app.route("/predict", methods=["GET"])
 def predict() -> flask.Response:
     """Takes in one or several mapillary image keys using
-    the get field "mapillary_keys" which includes either a 
+    the get field "mapillary_keys" which includes either a
     string of one image or a list with several images
 
     Returns:
-        str: prediction in the form {image_id: {smoothness: xyz, 
+        str: prediction in the form {image_id: {smoothness: xyz,
         surface: xyz}}
     """
     try:
         # read mapillary keys
-        mapillary_keys = request.args['mapillary_keys']
+        mapillary_keys = request.args["mapillary_keys"]
         image_ids = json.loads(mapillary_keys)
 
         # put single image into a list
         if isinstance(image_ids, str):
             image_ids = [image_ids]
 
-        # create temporary directory 
+        # create temporary directory
         tmp_dir = Path(__file__).parents[0] / "tmp_dir"
         Path(tmp_dir).mkdir(exist_ok=True)
-        
+
         # iterate over all keys and get a prediction
         predictions = {}
         for image_id in image_ids:
@@ -137,18 +141,9 @@ def predict() -> flask.Response:
         return jsonify(predictions)
     except:
         # in case of any error, return the traceback
-        return jsonify({'trace': traceback.format_exc()})
+        return jsonify({"trace": traceback.format_exc()})
 
 
 if __name__ == "__main__":
 
     app.run(debug=True)
-    
-    
-
-
-
-
-
-
-

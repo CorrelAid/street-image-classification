@@ -20,15 +20,13 @@ class MTLMobileNetV3(torchvision.models.MobileNetV3):
         self.classifier = torch.nn.Sequential(
             torch.nn.Linear(self.lastconv_output_channels, self.last_channel),
             torch.nn.Hardswish(inplace=True),
-            torch.nn.Dropout(p=0.2, inplace=True)
+            torch.nn.Dropout(p=0.2, inplace=True),
         )
         self.classifier1 = torch.nn.Sequential(
-            torch.nn.Linear(self.last_channel, num_classes),
-            torch.nn.LogSoftmax(dim=1)
+            torch.nn.Linear(self.last_channel, num_classes), torch.nn.LogSoftmax(dim=1)
         )
         self.classifier2 = torch.nn.Sequential(
-            torch.nn.Linear(self.last_channel, num_classes),
-            torch.nn.LogSoftmax(dim=1)
+            torch.nn.Linear(self.last_channel, num_classes), torch.nn.LogSoftmax(dim=1)
         )
 
     def _forward_impl(self, x: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]:
@@ -50,7 +48,8 @@ def load_pretrained_mtl_mobilenet_v3_large(num_classes: int) -> MTLMobileNetV3:
 
     model = MTLMobileNetV3(inverted_residual_setting, last_channel)
     state_dict = torchvision.models.mobilenetv3.load_state_dict_from_url(
-        torchvision.models.mobilenetv3.model_urls[arch], progress=True)
+        torchvision.models.mobilenetv3.model_urls[arch], progress=True
+    )
     model.load_state_dict(state_dict)
     model.add_mtl_head(num_classes=num_classes)
     return model
@@ -97,7 +96,7 @@ class CargoRocketModel(pl.LightningModule):
         loss1 = self.criterion1(y_hat1, y1)
         loss2 = self.criterion2(y_hat2, y2)
         loss = loss1 + loss2
-        self.log('train_loss', loss)
+        self.log("train_loss", loss)
 
         for metric_name, metric in self.train_metrics.items():
             if "surface" in metric_name:
@@ -118,7 +117,7 @@ class CargoRocketModel(pl.LightningModule):
         loss1 = self.criterion1(y_hat1, y1)
         loss2 = self.criterion2(y_hat2, y2)
         loss = loss1 + loss2
-        self.log('val_loss', loss)
+        self.log("val_loss", loss)
 
         for metric_name, metric in self.val_metrics.items():
             if "surface" in metric_name:

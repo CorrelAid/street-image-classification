@@ -14,6 +14,7 @@ class StreetImageDataset(Dataset):
     """
     Class for street image dataset.
     """
+
     def __init__(self, path: str, transform: Optional[Callable] = None):
         self._init_csv_df(path)
 
@@ -65,12 +66,7 @@ class StreetImageDataset(Dataset):
         if self.transform:
             image = self.transform(image)
 
-        return {
-            "image": image,
-            "surface": surface_label,
-            "smoothness": smoothness_label
-        }
-
+        return {"image": image, "surface": surface_label, "smoothness": smoothness_label}
 
 
 def split_train_val(dataset: Dataset, train_ratio: float) -> Tuple[Dataset, Dataset]:
@@ -88,16 +84,17 @@ def split_train_val(dataset: Dataset, train_ratio: float) -> Tuple[Dataset, Data
     return train_dataset, val_dataset
 
 
-def create_train_val_loader(dataset: Dataset, train_ratio: float, batch_size: int,
-                            num_workers: int = 0) \
-        -> Tuple[DataLoader, DataLoader]:
+def create_train_val_loader(
+    dataset: Dataset, train_ratio: float, batch_size: int, num_workers: int = 0
+) -> Tuple[DataLoader, DataLoader]:
     """
     Create DataLoader for train and validation dataset.
     """
     train_dataset, val_dataset = split_train_val(dataset, train_ratio)
 
-    train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True,
-                              num_workers=num_workers)
+    train_loader = DataLoader(
+        train_dataset, batch_size=batch_size, shuffle=True, num_workers=num_workers
+    )
     val_loader = DataLoader(val_dataset, batch_size=batch_size, num_workers=num_workers)
 
     return train_loader, val_loader
