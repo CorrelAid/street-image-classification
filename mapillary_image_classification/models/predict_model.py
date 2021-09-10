@@ -8,12 +8,12 @@ from urllib.request import urlretrieve
 import shutil
 import json
 
-from src.config import MAPILLARY_TOKEN_v4
-from src.models.model import CargoRocketModel
-from src.models.dataset import StreetImageDataset
-from src.models.preprocessing import get_predict_image_transform
+from mapillary_image_classification.config import MAPILLARY_TOKEN_v4
+from mapillary_image_classification.models.model import CargoRocketModel
+from mapillary_image_classification.models.dataset import StreetImageDataset
+from mapillary_image_classification.models.preprocessing import get_predict_image_transform
 
-from src.config import PROJECT_ROOT_PATH
+from mapillary_image_classification.config import PROJECT_ROOT_PATH
 import requests
 import traceback
 

@@ -2,10 +2,10 @@ import torch
 import pytorch_lightning as pl
 from pytorch_lightning.callbacks.model_checkpoint import ModelCheckpoint
 
-from src.config import PROJECT_ROOT_PATH
-from src.models.dataset import StreetImageDataset, create_train_val_loader
-from src.models.model import CargoRocketModel
-from src.models.preprocessing import get_train_image_transform
+from mapillary_image_classification.config import PROJECT_ROOT_PATH
+from mapillary_image_classification.models.dataset import StreetImageDataset, create_train_val_loader
+from mapillary_image_classification.models.model import CargoRocketModel
+from mapillary_image_classification.models.preprocessing import get_train_image_transform
 
 
 def get_checkpoint_callback(metric: str) -> ModelCheckpoint:
