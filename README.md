@@ -7,7 +7,10 @@ With the goal of promoting sustainable mobility, the volunteer organization Carg
 
 Use our API
 ------------
-Send a GET request to [https://correlaid.cargorocket.de/predict?mapillary_keys=["{mapillary_key_one}", "{mapillary_key_two}]](https://correlaid.cargorocket.de/predict?mapillary_keys=["{mapillary_key_one}", "{mapillary_key_two}]), whereby you have to replace the placeholder with the Mapillary image IDs you would like to get smoothness and surface predictions for.
+Send a GET request to 
+``https://correlaid.cargorocket.de/predict?mapillary_keys=["{mapillary_key_one}", "{mapillary_key_two}]``, 
+
+whereby you have to replace the placeholder with the Mapillary image IDs you would like to get smoothness and surface predictions for.
 
 Details
 ------------
@@ -19,6 +22,7 @@ You can find the whole code for creating a dataset in the `mapillary_image_class
 For a better routing for cargo bikes, it is sufficient to know whether a certain street / bike lane has a good, intermediate or bad quality. That is why, we mapped the original surface and smoothness categories of OSM to our own categories. This enables an easier training of the Deep Learning model. Our final categories are the following
 * **Surface:** paved, unpaved, cobblestone
 * **Smoothness:** good, okay, bad
+
 You can find the category mapping in the file `osm.py`.
 
 
