@@ -8,6 +8,7 @@ import pytorch_lightning as pl
 
 
 class MTLMobileNetV3(torchvision.models.MobileNetV3):
+    
     def __init__(self, inverted_residual_setting, last_channel):
         super().__init__(inverted_residual_setting, last_channel)
 
@@ -42,6 +43,11 @@ class MTLMobileNetV3(torchvision.models.MobileNetV3):
 
 
 def load_pretrained_mtl_mobilenet_v3_large(num_classes: int) -> MTLMobileNetV3:
+    """
+    This method is orginally from torchvision (https://github.com/pytorch/vision),
+    licensed under the BSD 3-Clause License, Copyright (c) Soumith Chintala 2016
+    and then modified.
+    """
     arch = "mobilenet_v3_large"
     params = dict()
     inverted_residual_setting, last_channel = _mobilenet_v3_conf(arch, params)
